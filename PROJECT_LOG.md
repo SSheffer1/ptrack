@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟢 Calendar milestone (M4) done + pushed (calendar, agenda, recurring tickets, assigned/completed dates, Alembic). Next: Milestone 3 (Android APK). Repo: https://github.com/SSheffer1/ptrack
+> **Status:** ⏸️ Paused mid-Milestone 3 (Android APK). User installing Java. **See "Resume here: Milestone 3" below.** Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -177,6 +177,29 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 - Q2f. Does the home IP change (dynamic)? If yes, need a DDNS updater for the domain (Caddy plugin or small cron job).
 - Q2g. Who is the domain's DNS provider? (Affects DDNS + whether Caddy can use DNS challenge.)
 - Q9. Better name than "ptrack"? (Codename is fine until then.)
+
+---
+
+## Resume here: Milestone 3 (Android APK)
+
+**State when paused (2026-10-23):** all work committed + pushed (`fe7b77f`), except this log update. `~/Android/Sdk/cmdline-tools/latest` installed (verified). User was mid-install of `jdk21-openjdk android-tools` (sudo). Nothing Capacitor-related exists yet.
+
+**Toolchain steps left**
+1. Verify `java -version` → 21 (if several JDKs: `archlinux-java status`; Gradle needs 21, not 27). Verify `adb`.
+2. `~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --licenses` — the **user** must accept the licenses (interactive; suggest `! yes | …` only if they agree).
+3. Install `platform-tools`, `platforms;android-<N>`, `build-tools;<N>.x` matching what Capacitor 8.5's android template asks for (check `android/variables.gradle` after `cap add`).
+4. Point Gradle at the SDK via `app/android/local.properties` (`sdk.dir=~/Android/Sdk`, gitignored) rather than editing the user's shell profile.
+
+**Planned design (proposed D-032; explain to user before building)**
+- **Capacitor 8** wraps `app/` → `app/android/`. Plugins: `@capacitor/filesystem`, `@capacitor/app` (resume → sync), `@capacitor/network` maybe.
+- **Local store = change log replay, in TypeScript** (instead of the SQLite plugin from D-012): device keeps every known change (server-confirmed + pending) in one JSON file in app-private storage (Filesystem, Directory.Data; write tmp + rename). Rows are rebuilt by replaying the log with per-field LWW — same rule as the server, order-independent. Reason: one language, no SQL duplicated from server, same code can later run in the desktop browser/Tauri; data is small (~2 MB for 1000 tickets). Must tell user this changes D-012.
+- **Backend switch:** split `lib/api.ts` → `types.ts` (types, labels), `http.ts` (current fetch backend), `local/` (local backend + sync). `api.ts` re-exports types and picks the backend: native platform → local; browser → http (plus a dev flag to run local mode in the desktop browser for testing).
+- **Local backend must mirror server semantics:** filters/sort/date ranges, key lookup, `assigned` effective date, comments, history from local log. Status → done also writes `completed_on` (local date) in the same batch (server keeps explicit values); reopen writes `completed_on: null`. **Ticket numbers and recurring next copies stay server-only** → appear after sync; UI already shows `…` for missing keys and links by id.
+- **Sync engine:** device id `android-<uuid>` (not "web"/"server"); local clock `max(Date.now(), last+1)`, observes incoming ts (HLC-lite); outbox = this device's unconfirmed changes; `POST /sync {device_id, since, changes}` loop while `more`; dedupe on (entity_id, field, ts, device_id). Triggers: app start, resume, ~1 s after edits, every ~30 s. **A 400 rejects the whole batch forever** → validate locally (repeat rule: FREQ in DAILY/WEEKLY/MONTHLY/YEARLY, no COUNT/DTSTART) and offer "discard unsynced changes" in Settings.
+- **Networking (LAN, HTTP):** run server with `--host 0.0.0.0` (fastapi dev binds 127.0.0.1); check Arch firewall. App's WebView origin is https://localhost → fetch to http://LAN is mixed content + CORS. Plan: enable `CapacitorHttp` (native HTTP, patches fetch → no CORS/mixed content) + allow cleartext in Android network config for dev builds. HTTPS via Caddy later removes the cleartext need.
+- **UI:** Settings page (`#/settings`): server URL, device id, last sync, pending count, last error, Sync now, discard pending. Small sync indicator in top bar.
+- **Tests:** add vitest for the local store/sync (fake transport), plus a real end-to-end run against the dev server.
+- **Then:** `npx cap sync android`, `./gradlew assembleDebug`, install via `adb install` (USB debugging) or copy the APK to the phone.
 
 ---
 
