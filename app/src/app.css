@@ -200,6 +200,28 @@ label > textarea {
 .brand {
   font-weight: 700;
   letter-spacing: 0.02em;
+  margin-right: 1.25rem;
+}
+
+nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+nav a {
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+nav a:hover {
+  color: var(--text);
+}
+
+nav a.active {
+  color: var(--text);
+  background: var(--bg);
+  font-weight: 600;
 }
 
 .toolbar {
@@ -439,4 +461,149 @@ label > textarea {
   margin-top: 1.5rem;
   display: flex;
   justify-content: flex-end;
+}
+
+.repeat {
+  color: var(--muted);
+}
+
+.notice {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--done);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+.notice a {
+  color: var(--accent);
+}
+
+/* --- Calendar ---------------------------------------------------------------- */
+
+.month-title {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--border);
+  gap: 1px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.weekday {
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 0.3rem 0;
+}
+
+.day {
+  background: var(--surface);
+  min-height: 6.5rem;
+  padding: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.day.other-month {
+  background: var(--bg);
+}
+
+.day.other-month .day-num {
+  color: var(--muted);
+}
+
+.day-num {
+  align-self: flex-end;
+  border: none;
+  background: none;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+  border-radius: 999px;
+}
+
+.day-num:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.day.today .day-num {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.cal-item {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.3rem;
+  border-left: 3px solid var(--status-color);
+  background: var(--bg);
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-item.status-done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.cal-item.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.cal-time {
+  color: var(--muted);
+  margin-right: 0.2rem;
+}
+
+@media (max-width: 600px) {
+  .day {
+    min-height: 4.5rem;
+  }
+  .cal-time {
+    display: none;
+  }
+}
+
+/* --- Agenda ---------------------------------------------------------------- */
+
+.agenda-day {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0.4rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.agenda-day.overdue {
+  color: var(--danger);
+}
+
+.agenda-day .hint {
+  font-weight: 400;
+}
+
+.dates {
+  margin: -0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.done-text {
+  color: var(--done);
 }

@@ -4,7 +4,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 // "YYYY-MM-DD" → local midnight. (new Date("2026-10-28") would be UTC midnight,
 // which is the previous evening in US time zones.)
-function parseDate(d: string): Date {
+export function parseDate(d: string): Date {
   const [y, m, day] = d.split('-').map(Number)
   return new Date(y, m - 1, day)
 }
@@ -53,4 +53,37 @@ export function exactTime(ms: number): string {
 
 export function parseLabels(text: string): string[] {
   return [...new Set(text.split(',').map((l) => l.trim()).filter(Boolean))]
+}
+
+// Date → "YYYY-MM-DD" in local time (toISOString would convert to UTC first).
+export function toISODate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+export function addDays(d: Date, days: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days)
+}
+
+// "14:30:00" → "2:30 PM" (or "14:30", depending on the browser's locale).
+export function formatTime(t: string): string {
+  const [h, m] = t.split(':').map(Number)
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+export function formatDueWithTime(due: string, time: string | null): string {
+  return time ? `${formatDue(due)} · ${formatTime(time)}` : formatDue(due)
+}
+
+// Whole days from a to b ("YYYY-MM-DD" strings).
+export function daysBetween(a: string, b: string): number {
+  return Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / DAY_MS)
+}
+
+// "2 days early" / "on the due date" / "1 day late".
+export function timing(due: string, completed: string): string {
+  const n = daysBetween(completed, due)
+  if (n === 0) return 'on the due date'
+  const days = Math.abs(n) === 1 ? '1 day' : `${Math.abs(n)} days`
+  return n > 0 ? `${days} early` : `${days} late`
 }

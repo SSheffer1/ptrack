@@ -8,8 +8,8 @@ the single record of everything that happened, and it doubles as ticket history.
 
 import re
 import uuid
-from datetime import date
-from typing import Annotated, Any
+from datetime import date, datetime, time
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -93,6 +93,9 @@ class ItemCreate(BaseModel):
     priority: Priority = Priority.none
     labels: list[str] = []
     due: date | None = None
+    due_time: time | None = None
+    repeat: str | None = None  # RRULE, e.g. "FREQ=WEEKLY;BYDAY=FR"
+    assigned_on: date | None = None  # leave out to use today
 
 
 class ItemUpdate(BaseModel):
@@ -102,6 +105,10 @@ class ItemUpdate(BaseModel):
     priority: Priority | None = None
     labels: list[str] | None = None
     due: date | None = None
+    due_time: time | None = None
+    repeat: str | None = None
+    assigned_on: date | None = None  # null = back to the created date
+    completed_on: date | None = None
 
 
 class ItemRead(BaseModel):
@@ -116,6 +123,12 @@ class ItemRead(BaseModel):
     priority: Priority
     labels: list[str]
     due: date | None
+    due_time: time | None
+    repeat: str | None
+    next_id: str | None  # set once a recurring ticket is done: its next copy
+    assigned_on: date | None  # only if set by hand
+    assigned: date  # assigned_on, or else the day it was created
+    completed_on: date | None
     created_at: int
     updated_at: int
 
@@ -123,7 +136,8 @@ class ItemRead(BaseModel):
 def _read(session: Session, item: Item) -> ItemRead:
     project = session.get(Project, item.project_id) if item.project_id else None
     key = f"{project.key}-{item.number}" if project and item.number else None
-    return ItemRead(**item.model_dump(), key=key)
+    assigned = item.assigned_on or datetime.fromtimestamp(item.created_at / 1000).date()
+    return ItemRead(**item.model_dump(), key=key, assigned=assigned)
 
 
 def _find_item(session: Session, ref: str) -> Item:
@@ -152,6 +166,11 @@ def list_items(
     status: Annotated[list[Status] | None, Query()] = None,
     label: str | None = None,
     q: str | None = None,
+    due_from: date | None = None,
+    due_to: date | None = None,
+    completed_from: date | None = None,
+    completed_to: date | None = None,
+    sort: Literal["created", "due", "completed"] = "created",
 ) -> list[ItemRead]:
     query = select(Item).where(Item.owner_id == OWNER_ID, col(Item.deleted).is_(False))
     if project:
@@ -163,7 +182,22 @@ def list_items(
         query = query.where(col(Item.status).in_(status))
     if q:
         query = query.where(col(Item.title).ilike(f"%{q}%") | col(Item.body).ilike(f"%{q}%"))
-    items = session.exec(query.order_by(col(Item.created_at))).all()
+    if due_from:
+        query = query.where(col(Item.due) >= due_from)
+    if due_to:
+        query = query.where(col(Item.due) <= due_to)
+    if completed_from:
+        query = query.where(col(Item.completed_on) >= completed_from)
+    if completed_to:
+        query = query.where(col(Item.completed_on) <= completed_to)
+    order = {
+        "created": [col(Item.created_at)],
+        # Undated tickets last; same-day tickets by time, untimed last.
+        "due": [col(Item.due).is_(None), col(Item.due), col(Item.due_time).is_(None), col(Item.due_time)],
+        # Most recently finished first; unfinished last.
+        "completed": [col(Item.completed_on).is_(None), col(Item.completed_on).desc(), col(Item.updated_at).desc()],
+    }[sort]
+    items = session.exec(query.order_by(*order)).all()
     if label:  # labels are a JSON list; filtering in Python is fine at personal scale
         items = [i for i in items if label in i.labels]
     return [_read(session, i) for i in items]

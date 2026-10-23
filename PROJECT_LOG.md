@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟡 Milestone 2 (web UI) done + pushed. Now: calendar milestone (due times, calendar view, recurring tickets). Repo: https://github.com/SSheffer1/ptrack
+> **Status:** 🟢 Calendar milestone (M4) done + pushed (calendar, agenda, recurring tickets, assigned/completed dates, Alembic). Next: Milestone 3 (Android APK). Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -186,7 +186,7 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 - K2. Server clock (`sync._clock`) is in-memory; fine for one process, resets on restart (wall clock covers it).
 - K3. Two devices creating the same project key offline → two projects with one key. REST blocks it; sync doesn't yet.
 - K4. No auth — `OWNER_ID = "owner"` hardcoded in `api.py`. Must land before exposing to the internet (Milestone 6).
-- K5. No migrations — `create_all` only. Add Alembic before there's data worth keeping.
+- K5. No migrations — `create_all` only. Add Alembic before there's data worth keeping. **Resolved 2026-10-23:** Alembic set up (D-030).
 - K6. Moving a ticket between projects isn't supported (would need renumbering).
 - ~~K7. Personal email in author fields.~~ Fixed: repo-local git identity and `server/pyproject.toml` use `SSheffer1 <235915830+SSheffer1@users.noreply.github.com>` (GitHub private address, since repo is public). Global git config untouched.
 
@@ -222,6 +222,10 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 | D-025 | 2026-10-23 | Web app: plain Svelte 5 + Vite + TypeScript (not SvelteKit), hash routing (`#/items/HOME-12`), flat `app/src/` layout. API moved under `/api`; server also serves `app/dist` at `/` when built (`PTRACK_STATIC`). Dev: Vite on :5173 proxies `/api` → :8000. | SvelteKit's SSR/routing adds concepts we don't need; static SPA drops straight into Capacitor later; hash routing needs no server config. | Active |
 | D-026 | 2026-10-23 | **Calendar is a view of the tracker**, not a separate event system. Calendar shows items by due date (+ optional due time, e.g. exam Wed 10:00). No start/end time blocks, no lectures/class schedule — those stay out of ptrack. Recurrence = recurring *tickets* (marking done creates the next one, e.g. weekly lab report). Google Calendar integration dropped from v1; optional one-way ICS export later. | User: standalone app; calendar should reflect tracker issues; "lectures don't need to be on the tracker, assignment due dates are reasonable". Supersedes Google parts of D-006/D-007 and the 'events' item type. | Active |
 | D-027 | 2026-10-23 | Milestone order: M4 (due times + calendar + recurring tickets) before M3 (Android APK). | Desktop already useful; APK then wraps the finished UI incl. calendar. | Active |
+| D-028 | 2026-10-23 | Recurring tickets: `repeat` = RRULE (no DTSTART; due date is the start; COUNT rejected, use UNTIL). Server spawns the next copy when status → done (applied change), copying project/title/body/priority/labels/due_time/repeat; sets `next_id` on the original (server-only field) so re-completing doesn't duplicate. Next due = next occurrence after old due; if that's in the past, first occurrence ≥ today. Uses python-dateutil. UI presets are weekday-agnostic ("Every week" follows the due date). | Server authority avoids duplicate spawns from multiple devices; standard RRULE keeps ICS export easy. | Active |
+| D-029 | 2026-10-23 | Assigned/completed dates. `assigned_on` (user-settable; null → created date; API returns effective `assigned`). `completed_on` (date): server sets it from the *change's* ts when status → done (so offline completions get the right day), clears on reopen, unless the same batch set `completed_on` explicitly; user can edit it. List `sort` = created / due / completed. Server-set completed_on hidden from UI history. | User: "created date is fine for assigned... optionally whenever I say... same for completion". | Active |
+| D-030 | 2026-10-23 | Schema migrations with Alembic, inside the package (`src/ptrack/migrations`), `render_as_batch` for SQLite; server runs `upgrade head` on startup; `test_migrations` asserts migrations == models. Autogenerate against a scratch DB via `PTRACK_DB`. | Real data in dev DB now; no more hand ALTERs. | Active |
+| D-031 | 2026-10-23 | Calendar shows finished tickets on their `completed_on` day (fallback: due), struck through, after that day's open items, regardless of the Done status chip; chips filter open tickets only. API: `completed_from`/`completed_to`. | User: closed tickets disappeared from the calendar; wanted them on the day done with strikethrough. | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---
@@ -248,6 +252,6 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 3. ~~`git init`, README, repo layout, dev environment.~~ Done (`app/`, `deploy/` created when needed).
 4. ~~Milestone 1: data model + change log + CRUD/sync API on server, with tests.~~ Done 2026-10-21.
 5. ~~Milestone 2: Svelte UI (ticket list + detail) running in desktop browser against server.~~ Done 2026-10-23.
-6. Milestone 4 (moved up, D-027): due times + calendar view (month + agenda) + recurring tickets.
+6. ~~Milestone 4 (moved up, D-027): due times + calendar view (month + agenda) + recurring tickets.~~ Done 2026-10-23 (+ assigned/completed dates, migrations).
 7. Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.
 8. Milestone 5: reminders. Milestone 6: deploy on Debian (Docker Compose + Caddy) + backups + login.
