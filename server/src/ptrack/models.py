@@ -11,15 +11,16 @@ Every synced table shares three conventions:
 Timestamps are integers: milliseconds since the Unix epoch.
 """
 
-from datetime import date
+from datetime import date, time
 from enum import StrEnum
 
 from sqlmodel import JSON, Column, Field, Index, SQLModel, UniqueConstraint
 
 
 class ItemType(StrEnum):
+    # Only tickets for now. The calendar is a view of tickets' due dates (D-026);
+    # the column stays so other kinds of items can be added later.
     ticket = "ticket"
-    event = "event"
 
 
 class Status(StrEnum):
@@ -50,7 +51,7 @@ class Project(SQLModel, table=True):
 
 
 class Item(SQLModel, table=True):
-    """A ticket or a calendar event. Event-only fields arrive in Milestone 4."""
+    """A ticket. Shows on the calendar on its due date."""
 
     id: str = Field(primary_key=True)
     owner_id: str = Field(index=True)
@@ -63,6 +64,11 @@ class Item(SQLModel, table=True):
     priority: Priority = Priority.none
     labels: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     due: date | None = None
+    due_time: time | None = None  # optional, e.g. an exam at 10:00
+    repeat: str | None = None  # recurrence rule, see recurrence.py
+    next_id: str | None = None  # the copy created when this recurring ticket was done
+    assigned_on: date | None = None  # when it was handed to you; None = the day it was created
+    completed_on: date | None = None  # set automatically when marked done; can be changed
     created_at: int = 0
     updated_at: int = 0
     deleted: bool = False

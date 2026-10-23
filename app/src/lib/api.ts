@@ -32,7 +32,7 @@ export interface Item {
   id: string
   key: string | null
   project_id: string | null
-  type: 'ticket' | 'event'
+  type: 'ticket'
   number: number | null
   title: string
   body: string
@@ -40,6 +40,12 @@ export interface Item {
   priority: Priority
   labels: string[]
   due: string | null // "YYYY-MM-DD"
+  due_time: string | null // "HH:MM:SS"
+  repeat: string | null // RRULE, see lib/recurrence.ts
+  next_id: string | null // next copy of a recurring ticket, once this one is done
+  assigned_on: string | null // only if set by hand
+  assigned: string // assigned_on, or else the day it was created
+  completed_on: string | null // set when marked done; can be changed
   created_at: number
   updated_at: number
 }
@@ -52,9 +58,17 @@ export interface ItemCreate {
   priority?: Priority
   labels?: string[]
   due?: string | null
+  due_time?: string | null
+  repeat?: string | null
+  assigned_on?: string | null
 }
 
-export type ItemUpdate = Partial<Pick<Item, 'title' | 'body' | 'status' | 'priority' | 'labels' | 'due'>>
+export type ItemUpdate = Partial<
+  Pick<
+    Item,
+    'title' | 'body' | 'status' | 'priority' | 'labels' | 'due' | 'due_time' | 'repeat' | 'assigned_on' | 'completed_on'
+  >
+>
 
 export interface Comment {
   id: string
@@ -76,6 +90,18 @@ export interface ItemFilters {
   status?: Status[]
   label?: string
   q?: string
+  due_from?: string
+  due_to?: string
+  completed_from?: string
+  completed_to?: string
+  sort?: SortOrder
+}
+
+export type SortOrder = 'created' | 'due' | 'completed'
+export const SORT_LABELS: Record<SortOrder, string> = {
+  created: 'Newest last',
+  due: 'Due date',
+  completed: 'Recently completed',
 }
 
 export class ApiError extends Error {
@@ -122,6 +148,11 @@ export const api = {
     for (const s of filters.status ?? []) params.append('status', s)
     if (filters.label) params.set('label', filters.label)
     if (filters.q) params.set('q', filters.q)
+    if (filters.due_from) params.set('due_from', filters.due_from)
+    if (filters.due_to) params.set('due_to', filters.due_to)
+    if (filters.completed_from) params.set('completed_from', filters.completed_from)
+    if (filters.completed_to) params.set('completed_to', filters.completed_to)
+    if (filters.sort) params.set('sort', filters.sort)
     return request<Item[]>('GET', `/items?${params}`)
   },
   getItem: (ref: string) => request<Item>('GET', `/items/${enc(ref)}`),
