@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟢 Milestone 1 (server core) done, 21 tests passing. Repo public at https://github.com/SSheffer1/ptrack. Next: user reviews Milestone 1, then Milestone 2 (web UI).
+> **Status:** 🟡 Milestone 2 (web UI) done + pushed. Now: calendar milestone (due times, calendar view, recurring tickets). Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -158,8 +158,8 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 1. Tickets: create/edit/close; title, markdown body, status, priority, labels, due date
 2. Projects/areas with ticket keys (`HOME-12`)
 3. Activity history + comments on tickets
-4. Events: create/edit, all-day, basic recurrence
-5. Calendar views: month / week / day, showing events + ticket due dates (using an existing calendar component)
+4. ~~Events~~ → recurring tickets + optional due time (D-026)
+5. Calendar views: month + agenda, showing ticket due dates
 6. List + kanban board views with filters
 7. Quick-add box (e.g. `fix bike !high #home due:fri`)
 8. Android APK with offline use + sync to home server
@@ -219,6 +219,9 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 | D-022 | 2026-10-21 | All writes (web REST and phone sync) become field-level changes in one `change` table, applied via `sync.apply_changes`. Ticket history = change log; comments are their own synced entity. No separate Activity table. | One write path, complete history for free, fewer tables to sync. | Active |
 | D-023 | 2026-10-21 | Sync protocol v0: `POST /sync {device_id, since, changes[]}` → `{changes, cursor, more}`. Device ts must strictly increase per device. Server-only fields: id, owner_id, created_at, updated_at, number, next_number. Batches are all-or-nothing; retries are deduped on (entity_id, field, ts, device_id). | Simple, idempotent, testable. | Active |
 | D-024 | 2026-10-23 | Code hosted on GitHub as public repo `SSheffer1/ptrack`, branch `master`. Commit identity: GitHub noreply address. This log is committed too, so keep secrets/IPs out of it. | User wants it on GitHub, public; noreply hides real email from scrapers. | Active |
+| D-025 | 2026-10-23 | Web app: plain Svelte 5 + Vite + TypeScript (not SvelteKit), hash routing (`#/items/HOME-12`), flat `app/src/` layout. API moved under `/api`; server also serves `app/dist` at `/` when built (`PTRACK_STATIC`). Dev: Vite on :5173 proxies `/api` → :8000. | SvelteKit's SSR/routing adds concepts we don't need; static SPA drops straight into Capacitor later; hash routing needs no server config. | Active |
+| D-026 | 2026-10-23 | **Calendar is a view of the tracker**, not a separate event system. Calendar shows items by due date (+ optional due time, e.g. exam Wed 10:00). No start/end time blocks, no lectures/class schedule — those stay out of ptrack. Recurrence = recurring *tickets* (marking done creates the next one, e.g. weekly lab report). Google Calendar integration dropped from v1; optional one-way ICS export later. | User: standalone app; calendar should reflect tracker issues; "lectures don't need to be on the tracker, assignment due dates are reasonable". Supersedes Google parts of D-006/D-007 and the 'events' item type. | Active |
+| D-027 | 2026-10-23 | Milestone order: M4 (due times + calendar + recurring tickets) before M3 (Android APK). | Desktop already useful; APK then wraps the finished UI incl. calendar. | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---
@@ -244,6 +247,7 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 2. Optional: web check that Capacitor SQLite/notification plugins and calendar component candidates are current.
 3. ~~`git init`, README, repo layout, dev environment.~~ Done (`app/`, `deploy/` created when needed).
 4. ~~Milestone 1: data model + change log + CRUD/sync API on server, with tests.~~ Done 2026-10-21.
-5. Milestone 2: Svelte UI (ticket list + detail) running in desktop browser against server.
-6. Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.
-7. Milestone 4: events + calendar views. Milestone 5: reminders. Milestone 6: deploy on Debian (Docker Compose + Caddy) + backups.
+5. ~~Milestone 2: Svelte UI (ticket list + detail) running in desktop browser against server.~~ Done 2026-10-23.
+6. Milestone 4 (moved up, D-027): due times + calendar view (month + agenda) + recurring tickets.
+7. Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.
+8. Milestone 5: reminders. Milestone 6: deploy on Debian (Docker Compose + Caddy) + backups + login.
