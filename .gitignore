@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.svelte-kit/
+
+# Android
+*.apk
+*.keystore
+local.properties
+
+# Local data and secrets
+*.db
+*.db-journal
+*.sqlite3
+.env
+.env.*
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

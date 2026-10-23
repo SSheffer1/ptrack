@@ -1,0 +1,25 @@
+[project]
+name = "ptrack"
+version = "0.1.0"
+description = "ptrack API and sync server"
+readme = "README.md"
+authors = [
+    { name = "SSheffer1", email = "235915830+SSheffer1@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.158.1",
+    "sqlmodel>=0.0.48",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
