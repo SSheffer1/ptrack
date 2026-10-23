@@ -19,7 +19,7 @@ def client():
             yield session
 
     app.dependency_overrides[get_session] = session_override
-    yield TestClient(app)
+    yield TestClient(app, base_url="http://testserver/api")
     app.dependency_overrides.clear()
 
 
