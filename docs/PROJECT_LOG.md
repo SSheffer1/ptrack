@@ -3,8 +3,8 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟢 Configuration done + pushed (server `ptrack.toml`, per-user preferences, `server/COMMANDS.md`). Next: **Milestone 6 = v1.0 release** on the Debian box (fresh install), Mon 2026-10-26 — see "Monday checklist". Repo: https://github.com/SSheffer1/ptrack
-> **Last updated:** 2026-10-23
+> **Status:** ⏸️ Paused 2026-10-24. Everything committed + pushed (`cd73197`). Milestones 1–5 + 7 (multi-user) + configuration done. Next: **Milestone 6 = v1.0 release** on the Debian box (fresh install) — planned Mon 2026-10-26, user may start it earlier (was cleaning out the box on 2026-10-24). **Read "Resume here" first.** Repo: https://github.com/SSheffer1/ptrack
+> **Last updated:** 2026-10-24
 
 ---
 
@@ -28,7 +28,8 @@ Goal: a single personal system that treats *tasks* like issue-tracker tickets (s
 Current plan:
 - **Already exists?** Partially (see *Prior Art*). Building is justified: user wants the result and to learn.
 - **Tech exists?** Yes. Hard parts are offline sync and scope control.
-- **Stack (proposed):** Svelte + TypeScript UI, packaged as an **Android APK via Capacitor** with a **local SQLite DB on the phone** (works fully offline) that syncs with a **Python/FastAPI server on the home Debian box**, exposed through **Caddy (HTTPS) on an opened port 443**. Desktop uses the same UI in a browser. Phone reminders are local notifications (no push server).
+- **Stack (built):** Svelte 5 + TypeScript UI, packaged as an **Android APK via Capacitor**; the phone keeps **its own copy as a change log** (works fully offline, D-032) and syncs with a **Python/FastAPI + SQLite server** (Alembic migrations). Desktop/iPhone use the same UI in a browser, served by the server. Phone reminders are local notifications. Family accounts with shared projects (D-035). Server settings in `server/ptrack.toml`, personal preferences synced (D-038). License GPL-3.0-or-later.
+- **Planned (M6):** Docker Compose on the home Debian box, **Caddy (HTTPS)**, nightly backups; v1.0 release.
 
 ---
 
@@ -182,7 +183,7 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 
 ---
 
-## Multi-user design draft (D-035, not built yet)
+## Multi-user design (D-035, built 2026-10-24 — kept for reference)
 
 - **Users:** `user` table (id, username, display name, password hash via stdlib `hashlib.scrypt` — no new dependency, is_admin). Accounts created by the admin only (no sign-up). Existing `owner_id = "owner"` data migrates to the admin's account.
 - **Login:** each device signs in once and gets its own long-lived token (random; server stores only its hash; revocable per device). Sent as `Authorization: Bearer …` by browser and phone.
@@ -195,38 +196,46 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 
 ---
 
-## Monday checklist: Milestone 6 (Debian deploy)
+## Milestone 6 plan: v1.0 release on the Debian box (planned Mon 2026-10-26; may start earlier)
+
+This deploy **is the initial product release** (D-037): clean repo, polished README with real install steps, fresh install on the box (Q12: empty database).
+
+Packages for the box (told the user 2026-10-24): server-only Debian install (no desktop; "SSH server" + "standard system utilities"), then `sudo curl ca-certificates git sqlite3 ufw unattended-upgrades`, and Docker Engine + Compose plugin from Docker's official apt repo. No Python/Node/uv on the host — they live in the images.
 
 Ask the user / have ready before starting:
-1. Is Debian installed on the AM4 box? Can this laptop SSH into it (user, address)? Is it wired to the router?
-2. DHCP reservation for the box in the Deco app (fixed address).
-3. Domain: which DNS provider (Q2g)? Needed for a real HTTPS cert at home via Caddy's DNS-01 challenge (API token).
-4. Home-only for now, or reachable from outside (port 443, homeowner approval)?
-5. Fresh database or copy the laptop's (Q12)?
-Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on start); Caddy reverse proxy (HTTPS, room for other services); login (password, long-lived device tokens for phone/browser); nightly SQLite backup with rotation; phone app → https:// and drop `usesCleartextTraffic` (K8); fixes K11 (wired server).
+1. Debian (which version?) installed fresh on the AM4 APU box? Wired to the router? SSH from the laptop working (username, address)? The box will host other services later.
+2. DHCP reservation for the box in the Deco app (fixed address) — offer to walk through it.
+3. Domain: which DNS provider (Q2g)? Needed for a real HTTPS cert at home via Caddy's DNS-01 challenge (API token, kept out of git).
+4. Home-only for now, or reachable from outside (port 443 forward; homeowner approval; then Q2c CGNAT check and Q2f dynamic IP / DDNS)?
+
+Build (new `deploy/` folder + server image):
+- **Server image**: Python + uv, `uv sync --frozen`, built web app copied in (`static_dir`), runs `ptrack-serve` with a `ptrack.toml` (host 0.0.0.0, database on a volume); migrations on start; non-root user.
+- **Caddy** container: reverse proxy, automatic HTTPS (DNS-01 plugin for the provider), room for other services by subdomain.
+- **Backups**: nightly SQLite backup to a volume, keep N days; `[backup]` settings in ptrack.toml + CONFIGURATION.md; document restore.
+- **First admin**: `docker compose exec ptrack ptrack-admin create-user <name> --admin`.
+- **App**: switch to `https://…`, remove `usesCleartextTraffic` (K8); release-signed APK? (ask); rebuild + install.
+- **Docs**: README "Self-hosting" with exact steps; COMMANDS.md Docker equivalents; tag v1.0.0? (ask).
+- Verify: phone on Wi-Fi + after reconnect (K11 gone), iPhone browser, backup restore, box reboot brings everything back.
 
 ---
 
-## Resume here: Milestone 3 (Android APK) — DONE, kept for reference
+## Resume here (2026-10-24)
 
-**State when paused (2026-10-23):** all work committed + pushed (`fe7b77f`), except this log update. `~/Android/Sdk/cmdline-tools/latest` installed (verified). User was mid-install of `jdk21-openjdk android-tools` (sudo). Nothing Capacitor-related exists yet.
+**State:** all work committed + pushed; working tree clean. Last commits: `cd73197` configuration, `850d4b1` multi-user, `2a159f0` GPL license.
 
-**Toolchain steps left**
-1. Verify `java -version` → 21 (if several JDKs: `archlinux-java status`; Gradle needs 21, not 27). Verify `adb`.
-2. `~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk --licenses` — the **user** must accept the licenses (interactive; suggest `! yes | …` only if they agree).
-3. Install `platform-tools`, `platforms;android-<N>`, `build-tools;<N>.x` matching what Capacitor 8.5's android template asks for (check `android/variables.gradle` after `cap add`).
-4. Point Gradle at the SDK via `app/android/local.properties` (`sdk.dir=/home/sheffy/Android/Sdk`, gitignored) rather than editing the user's shell profile.
+**What exists**
+- `server/` — FastAPI + SQLModel + SQLite, Alembic (5 migrations, head `78169c540812`), accounts/sign-in (`auth.py`), sharing + permissions + sync (`sync.py`), preferences (`prefs.py`), settings file (`config.py`, `ptrack.example.toml`), CLIs `ptrack-admin` (accounts, show-config) and `ptrack-serve`. **All commands: `server/COMMANDS.md`.** 89 tests.
+- `app/` — Svelte 5 + Vite web app + Capacitor 8 Android project. Online mode (browser) vs offline-first (phone): `lib/runtime.svelte.ts`. Local store/sync: `lib/local/`. 35 unit tests + a two-phone e2e (`sync.e2e.test.ts`, needs a scratch server; recipe in its header and COMMANDS.md).
+- `docs/CONFIGURATION.md` — every setting in three layers. This log.
 
-**Planned design (proposed D-032; explain to user before building)**
-- **Capacitor 8** wraps `app/` → `app/android/`. Plugins: `@capacitor/filesystem`, `@capacitor/app` (resume → sync), `@capacitor/network` maybe.
-- **Local store = change log replay, in TypeScript** (instead of the SQLite plugin from D-012): device keeps every known change (server-confirmed + pending) in one JSON file in app-private storage (Filesystem, Directory.Data; write tmp + rename). Rows are rebuilt by replaying the log with per-field LWW — same rule as the server, order-independent. Reason: one language, no SQL duplicated from server, same code can later run in the desktop browser/Tauri; data is small (~2 MB for 1000 tickets). Must tell user this changes D-012.
-- **Backend switch:** split `lib/api.ts` → `types.ts` (types, labels), `http.ts` (current fetch backend), `local/` (local backend + sync). `api.ts` re-exports types and picks the backend: native platform → local; browser → http (plus a dev flag to run local mode in the desktop browser for testing).
-- **Local backend must mirror server semantics:** filters/sort/date ranges, key lookup, `assigned` effective date, comments, history from local log. Status → done also writes `completed_on` (local date) in the same batch (server keeps explicit values); reopen writes `completed_on: null`. **Ticket numbers and recurring next copies stay server-only** → appear after sync; UI already shows `…` for missing keys and links by id.
-- **Sync engine:** device id `android-<uuid>` (not "web"/"server"); local clock `max(Date.now(), last+1)`, observes incoming ts (HLC-lite); outbox = this device's unconfirmed changes; `POST /sync {device_id, since, changes}` loop while `more`; dedupe on (entity_id, field, ts, device_id). Triggers: app start, resume, ~1 s after edits, every ~30 s. **A 400 rejects the whole batch forever** → validate locally (repeat rule: FREQ in DAILY/WEEKLY/MONTHLY/YEARLY, no COUNT/DTSTART) and offer "discard unsynced changes" in Settings.
-- **Networking (LAN, HTTP):** run server with `--host 0.0.0.0` (fastapi dev binds 127.0.0.1); check Arch firewall. App's WebView origin is https://localhost → fetch to http://LAN is mixed content + CORS. Plan: enable `CapacitorHttp` (native HTTP, patches fetch → no CORS/mixed content) + allow cleartext in Android network config for dev builds. HTTPS via Caddy later removes the cleartext need.
-- **UI:** Settings page (`#/settings`): server URL, device id, last sync, pending count, last error, Sync now, discard pending. Small sync indicator in top bar.
-- **Tests:** add vitest for the local store/sync (fake transport), plus a real end-to-end run against the dev server.
-- **Then:** `npx cap sync android`, `./gradlew assembleDebug`, install via `adb install` (USB debugging) or copy the APK to the phone.
+**Dev environment on the laptop (Arch, 192.168.68.72 on home Wi-Fi, TP-Link Deco mesh)**
+- Restart if needed: `cd server && uv run fastapi dev src/ptrack/main.py --host 0.0.0.0` (user runs this in their own terminal) and `cd app && npm run dev` (Vite :5173, localhost only). Server on :8000 also serves the built web app (`npm run build`) and `app/dist/ptrack.apk` (copied by hand after each APK build; dist is gitignored).
+- Dev DB `server/ptrack.db`: test data; accounts `sheffy` (admin, the user) and `miki` (family test account, used on an iPhone in Safari).
+- Phones: user's **Pixel 8a** (serial 43301JEKB07548, 192.168.68.57) via USB adb — sometimes needs re-plug or a phone restart; a test **iPhone** at 192.168.68.56 uses the web app. ufw on the laptop allows 8000/tcp from the home subnet.
+- **K11:** after a phone rejoins Wi-Fi it often can't reach the laptop until the laptop pings it. Goes away with the wired Debian server.
+- Build + install APK: `cd app && npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug) && adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
+
+**Shelved (user decision, may revisit):** kanban board (D-033), quick-add (D-034). **Ideas not started:** app icon, ICS feed for phone calendars, offline desktop app (Tauri), release-signed APK, renaming the project (Q9).
 
 ---
 
@@ -238,6 +247,11 @@ Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on st
 - ~~K4. No auth.~~ Resolved 2026-10-24 (M7 step 1): accounts + per-device tokens. Still to consider before internet exposure: login rate limiting beyond the 1 s delay, HTTPS.
 - K5. No migrations — `create_all` only. Add Alembic before there's data worth keeping. **Resolved 2026-10-23:** Alembic set up (D-030).
 - K6. Moving a ticket between projects isn't supported (would need renumbering).
+- K8. `android:usesCleartextTraffic="true"` in AndroidManifest (plain HTTP to the LAN server). Remove when HTTPS via Caddy exists (M6).
+- K9. Server on the LAN without HTTPS: passwords and tokens travel unencrypted on the home network. Accepted for LAN testing; fixed by M6. Before internet exposure also consider login rate limiting (only a 1 s delay now).
+- K10. Dev laptop's LAN IP (192.168.68.72) is DHCP-assigned; if it changes, the phones' server address breaks. Moot once the server is on the Debian box with a DHCP reservation.
+- K11. **Phone can't reach the laptop after rejoining Wi-Fi** ("No route to host") until the laptop pings it. Confirmed by repeat tests 2026-10-24 (Pixel and iPhone). Likely the Deco mesh (laptop on 6 GHz) not delivering the phone's ARP broadcasts. Not an app bug. Fix: wired Debian server. Stopgap: ping keep-alive.
+- K12. Browser "offline-first" test mode: edits made in it stay in that browser if you switch back to online mode before they sync. User declined a warning (dev/test switch).
 - ~~K7. Student email in author fields.~~ Fixed: repo-local git identity and `server/pyproject.toml` use `SSheffer1 <235915830+SSheffer1@users.noreply.github.com>` (GitHub private address, since repo is public). Global git config untouched (school identity for other repos).
 
 ---
@@ -299,6 +313,8 @@ Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on st
 - **2026-10-21** — Explained uv; user agreed (D-021). Dev machine has Python 3.14.8, no uv/pip yet — user to run `sudo pacman -S uv`. Ran `git init` (branch `master`), added README.md + .gitignore. Nothing committed yet (commit only when user asks). **Next:** once uv is installed, `uv init` in `server/` and start Milestone 1.
 - **2026-10-21** — **Milestone 1 done (uncommitted).** uv 0.13.4 installed. `server/` created (Python 3.14, FastAPI, SQLModel, pytest). Implemented: tables (`models.py`), change log + per-field LWW + server-assigned ticket numbers + simplified HLC (`sync.py`), REST API for projects/tickets/comments/history + `POST /sync` (`api.py`). REST writes go through the same change path as sync (D-022). 21 tests pass; smoke-tested real server with curl. Design deviations from sketch: no separate `Activity` table — history *is* the change log (D-022); event-only fields deferred to Milestone 4; no project PATCH/rename endpoint yet. See *Known Issues*.
 - **2026-10-23** — Session resumed after a few days. User installed + logged into `gh` (account SSheffer1, git protocol ssh). Set repo-local identity to SSheffer1 + noreply email, made first commit, created public GitHub repo and pushed (D-024). Push gotcha: default key `~/.ssh/id_ed25519` belongs to a different GitHub account; the key registered to SSheffer1 is `~/.ssh/thinkarchshr` (GitHub title "thinkarch"). Fixed repo-locally with `git config core.sshCommand "ssh -i ~/.ssh/thinkarchshr -o IdentitiesOnly=yes"` (global SSH config untouched). **Next:** walk user through what Milestone 1 does (they want to look at it), then Milestone 2.
+- **2026-10-24** — User approved; committed + pushed configuration (`cd73197`).
+- **2026-10-24** — User paused ("might have more to work on later and might advance the deploy"). Refreshed this log: *Resume here*, *Milestone 6 plan*, summary, restored known issues K8–K12 (lost in an earlier edit), Next Steps. Phone ping keep-alive ended (2 h). User is cleaning out the Debian box and asked which packages it needs (answered; listed in the M6 plan).
 
 ---
 
@@ -312,4 +328,7 @@ Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on st
 6. ~~Milestone 4 (moved up, D-027): due times + calendar view (month + agenda) + recurring tickets.~~ Done 2026-10-23 (+ assigned/completed dates, migrations).
 7. ~~Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.~~ Done 2026-10-24 (change-log store instead of SQLite, D-032).
 8. ~~Milestone 5: reminders.~~ Done 2026-10-24 (phone-only local notifications).
-9. Milestone 6 (Mon 2026-10-26): deploy on Debian (Docker Compose + Caddy) + HTTPS + login + backups. Remaining v1 after that: kanban board, quick-add.
+9. ~~Milestone 7: multi-user (accounts, shared projects, assignees).~~ Done 2026-10-24.
+10. ~~Configuration: server ptrack.toml + per-user preferences + COMMANDS.md.~~ Done 2026-10-24.
+11. **Milestone 6 = v1.0 release** on the Debian box: see *Milestone 6 plan*.
+12. Later / optional: app icon, ICS feed, kanban (shelved), quick-add (shelved), offline desktop app, project name (Q9).
