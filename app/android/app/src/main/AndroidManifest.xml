@@ -10,7 +10,7 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
         <!-- usesCleartextTraffic: allows plain http:// to the home server while testing on the
-             LAN. Remove once the server is behind HTTPS (Caddy), see PROJECT_LOG K8. -->
+             LAN. Remove once the server is behind HTTPS (Caddy), see docs/PROJECT_LOG.md K8. -->
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"

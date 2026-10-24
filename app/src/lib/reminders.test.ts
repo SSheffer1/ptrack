@@ -7,11 +7,13 @@ function item(extra: Partial<Item>): Item {
     id: 'i1', key: 'SCHOOL-1', project_id: 'p', type: 'ticket', number: 1, title: 'Circuits exam', body: '',
     status: 'todo', priority: 'none', labels: [], due: null, due_time: null, repeat: null, next_id: null,
     assigned_on: null, assigned: '2026-10-20', completed_on: null, reminders: null, created_at: 0, updated_at: 0,
+    created_by: 'me', assignee_id: null,
     ...extra,
   }
 }
 
 const NOW = new Date(2026, 9, 24, 12, 0) // Sat Oct 24 2026, noon
+const remind = (items: Item[], now: Date) => upcomingReminders(items, now, 'me')
 
 describe('reminders', () => {
   it('untimed tickets are due at 9:00', () => {
@@ -20,30 +22,30 @@ describe('reminders', () => {
   })
 
   it('defaults: 8 hours before a timed ticket, 9 AM on the day otherwise', () => {
-    const [timed] = upcomingReminders([item({ due: '2026-10-28', due_time: '10:00:00' })], NOW)
+    const [timed] = remind([item({ due: '2026-10-28', due_time: '10:00:00' })], NOW)
     expect(timed.at).toEqual(new Date(2026, 9, 28, 2, 0))
-    const [untimed] = upcomingReminders([item({ due: '2026-10-28' })], NOW)
+    const [untimed] = remind([item({ due: '2026-10-28' })], NOW)
     expect(untimed.at).toEqual(new Date(2026, 9, 28, 9, 0))
     expect(untimed.body).toBe('Due Wed, Oct 28 · SCHOOL-1')
   })
 
   it('uses the ticket’s own reminders, or none', () => {
-    const at = upcomingReminders([item({ due: '2026-10-28', reminders: ['-2d', '-1d'] })], NOW).map((r) => r.at)
+    const at = remind([item({ due: '2026-10-28', reminders: ['-2d', '-1d'] })], NOW).map((r) => r.at)
     expect(at).toEqual([new Date(2026, 9, 26, 9, 0), new Date(2026, 9, 27, 9, 0)])
-    expect(upcomingReminders([item({ due: '2026-10-28', reminders: [] })], NOW)).toEqual([])
+    expect(remind([item({ due: '2026-10-28', reminders: [] })], NOW)).toEqual([])
   })
 
   it('skips done tickets, undated tickets and reminders in the past', () => {
-    expect(upcomingReminders([item({ due: '2026-10-28', status: 'done' })], NOW)).toEqual([])
-    expect(upcomingReminders([item({})], NOW)).toEqual([])
-    expect(upcomingReminders([item({ due: '2026-10-25', reminders: ['-2d', '0'] })], NOW).map((r) => r.at)).toEqual([
+    expect(remind([item({ due: '2026-10-28', status: 'done' })], NOW)).toEqual([])
+    expect(remind([item({})], NOW)).toEqual([])
+    expect(remind([item({ due: '2026-10-25', reminders: ['-2d', '0'] })], NOW).map((r) => r.at)).toEqual([
       new Date(2026, 9, 25, 9, 0),
     ])
   })
 
   it('gives each reminder a stable id', () => {
-    const a = upcomingReminders([item({ due: '2026-10-28', reminders: ['-1d', '0'] })], NOW)
-    const b = upcomingReminders([item({ due: '2026-10-28', reminders: ['-1d', '0'] })], NOW)
+    const a = remind([item({ due: '2026-10-28', reminders: ['-1d', '0'] })], NOW)
+    const b = remind([item({ due: '2026-10-28', reminders: ['-1d', '0'] })], NOW)
     expect(a.map((r) => r.id)).toEqual(b.map((r) => r.id))
     expect(new Set(a.map((r) => r.id)).size).toBe(2)
     expect(a.every((r) => Number.isInteger(r.id) && r.id > 0 && r.id < 2 ** 31)).toBe(true)
@@ -61,5 +63,12 @@ describe('reminders', () => {
   it('normalizes like the server', () => {
     expect(normalizeReminders([' -8H', '0', '-1d', '-8h'])).toEqual(['-1d', '-8h', '0'])
     expect(normalizeReminders(null)).toBeNull()
+  })
+
+  it("only reminds me about tickets that are mine", () => {
+    const due = { due: '2026-10-28' }
+    expect(remind([item({ ...due, assignee_id: 'bob' })], NOW)).toEqual([])
+    expect(remind([item({ ...due, created_by: 'bob', assignee_id: 'me' })], NOW)).toHaveLength(1)
+    expect(remind([item({ ...due, created_by: 'bob' })], NOW)).toEqual([]) // bob's, unassigned
   })
 })

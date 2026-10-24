@@ -3,8 +3,9 @@
 import uuid
 
 
-def sync(client, device, changes=(), since=0):
-    r = client.post("/sync", json={"device_id": device, "since": since, "changes": list(changes)})
+def sync(client, device, changes=(), since=0, epoch=0):
+    """epoch=0: a new account's epoch, so the server doesn't reset the download."""
+    r = client.post("/sync", json={"device_id": device, "since": since, "epoch": epoch, "changes": list(changes)})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -42,15 +43,22 @@ def test_two_offline_phones_dont_collide_on_numbers(client, home):
     assert client.get(f"/items/{b}").json()["key"] == "HOME-2"
 
 
-def test_ticket_synced_before_its_project_gets_numbered_later(client):
+def test_project_and_ticket_created_offline_in_one_batch_any_order(client):
     project_id = str(uuid.uuid4())
-    item_id, changes = new_ticket(project_id, "Orphan for now", ts=1000)
-    sync(client, "phone", changes)
-    assert client.get(f"/items/{item_id}").json()["key"] is None
-
-    sync(client, "phone", [change(project_id, "key", "GYM", 2000, "project"),
-                           change(project_id, "name", "Gym", 2000, "project")])
+    item_id, changes = new_ticket(project_id, "Made on the bus", ts=1000)
+    # The ticket's changes come first; the server still creates the project first.
+    changes += [change(project_id, "key", "GYM", 1000, "project"), change(project_id, "name", "Gym", 1000, "project")]
+    result = sync(client, "phone", changes)
+    assert result["dropped"] == []
     assert client.get(f"/items/{item_id}").json()["key"] == "GYM-1"
+    assert [p["role"] for p in client.get("/projects").json()] == ["owner"]
+
+
+def test_ticket_in_unknown_project_is_dropped(client):
+    item_id, changes = new_ticket(str(uuid.uuid4()), "Orphan", ts=1000)
+    result = sync(client, "phone", changes)
+    assert {d["entity_id"] for d in result["dropped"]} == {item_id}
+    assert client.get(f"/items/{item_id}").status_code == 404
 
 
 def test_last_write_wins_regardless_of_arrival_order(client, home):

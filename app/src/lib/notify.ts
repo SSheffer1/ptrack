@@ -18,13 +18,13 @@ async function allowed(): Promise<boolean> {
   return permission
 }
 
-export async function scheduleReminders(items: Item[]): Promise<number> {
+export async function scheduleReminders(items: Item[], me: string): Promise<number> {
   if (!(await allowed())) return 0
   const pending = await LocalNotifications.getPending()
   if (pending.notifications.length) {
     await LocalNotifications.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) })
   }
-  const reminders = upcomingReminders(items, new Date())
+  const reminders = upcomingReminders(items, new Date(), me)
   if (reminders.length) {
     await LocalNotifications.schedule({
       notifications: reminders.map((r) => ({

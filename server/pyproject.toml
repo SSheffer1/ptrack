@@ -15,6 +15,9 @@ dependencies = [
     "sqlmodel>=0.0.48",
 ]
 
+[project.scripts]
+ptrack-admin = "ptrack.admin:main"
+
 [build-system]
 requires = ["uv_build>=0.13.4,<0.14.0"]
 build-backend = "uv_build"

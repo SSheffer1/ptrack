@@ -10,10 +10,13 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .api import router
+from .auth import admin_router, public_router
+from .auth import router as auth_router
+from .auth import current_actor
 from .db import init_db
 
 # Default: ptrack/app/dist next to the server/ directory.
@@ -27,7 +30,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="ptrack", lifespan=lifespan)
-app.include_router(router, prefix="/api")
+app.include_router(public_router, prefix="/api")  # sign in
+signed_in = [Depends(current_actor)]  # everything else needs a signed-in user
+app.include_router(auth_router, prefix="/api", dependencies=signed_in)
+app.include_router(admin_router, prefix="/api", dependencies=signed_in)
+app.include_router(router, prefix="/api", dependencies=signed_in)
 
 
 @app.get("/api/health")

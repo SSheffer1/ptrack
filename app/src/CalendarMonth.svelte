@@ -3,7 +3,7 @@
   import NewTicket from './NewTicket.svelte'
   import { api, errorText, STATUSES, type Item } from './lib/api'
   import { addDays, dueTone, formatTime, toISODate } from './lib/format'
-  import { filters, projects } from './lib/state.svelte'
+  import { commonFilters, filters, projects } from './lib/state.svelte'
   import { runtime } from './lib/runtime.svelte'
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -49,7 +49,7 @@
     // The status chips filter open tickets; finished ones always show, struck through.
     const chosen = filters.statuses.filter((s) => s !== 'done')
     const openStatuses = chosen.length ? chosen : STATUSES.filter((s) => s !== 'done')
-    const common = { project: filters.project, q: filters.q }
+    const common = commonFilters()
     try {
       const [open, done] = await Promise.all([
         api.listItems({ ...common, status: openStatuses, due_from: range.from, due_to: range.to }),

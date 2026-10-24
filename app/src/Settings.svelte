@@ -1,13 +1,68 @@
 <script lang="ts">
+  import { account, type AdminUser, type Device } from './lib/account'
+  import { errorText } from './lib/api'
   import { ago, exactTime } from './lib/format'
-  import { discardPending, runtime, setBrowserOfflineMode, setServerUrl, syncNow } from './lib/runtime.svelte'
+  import { discardPending, runtime, setBrowserOfflineMode, signOut, syncNow } from './lib/runtime.svelte'
 
-  let url = $state(runtime.serverUrl)
+  let devices = $state<Device[]>([])
+  let family = $state<AdminUser[]>([])
+  let error = $state('')
+  let notice = $state('')
 
-  function saveUrl(e: SubmitEvent) {
+  // Change password
+  let currentPw = $state('')
+  let newPw = $state('')
+
+  // New family account
+  let newUser = $state({ username: '', display_name: '', password: '' })
+
+  async function refresh() {
+    devices = await account.devices().catch(() => [])
+    if (runtime.me?.is_admin) family = await account.listUsers().catch(() => [])
+  }
+  refresh()
+
+  async function run(action: () => Promise<unknown>, done = '') {
+    error = notice = ''
+    try {
+      await action()
+      notice = done
+      await refresh()
+    } catch (e) {
+      error = errorText(e)
+    }
+  }
+
+  function changePassword(e: SubmitEvent) {
     e.preventDefault()
-    setServerUrl(url)
-    url = runtime.serverUrl // show it as saved, e.g. with http:// added
+    run(async () => {
+      await account.changePassword(currentPw, newPw)
+      currentPw = newPw = ''
+    }, 'Password changed.')
+  }
+
+  function addFamily(e: SubmitEvent) {
+    e.preventDefault()
+    run(async () => {
+      await account.createUser({ ...newUser, username: newUser.username.trim().toLowerCase() })
+      newUser = { username: '', display_name: '', password: '' }
+    }, 'Account created. Give them their username and password; they can change the password in Settings.')
+  }
+
+  function resetPassword(u: AdminUser) {
+    const password = prompt(`New password for ${u.display_name} (at least 8 characters):`)
+    if (password) run(() => account.updateUser(u.id, { password }), `Password reset for ${u.display_name}.`)
+  }
+
+  function toggleDisabled(u: AdminUser) {
+    if (!u.disabled && !confirm(`Disable ${u.display_name}? They're signed out everywhere until you enable them again.`)) return
+    run(() => account.updateUser(u.id, { disabled: !u.disabled }))
+  }
+
+  function confirmSignOut() {
+    const n = runtime.sync.pending
+    const lost = n ? `\n\n${n} change${n === 1 ? '' : 's'} on this device haven't synced yet and will be lost.` : ''
+    if (confirm(`Sign out on this device? Its copy of your tickets is removed.${lost}`)) signOut()
   }
 
   function discard() {
@@ -18,29 +73,49 @@
   }
 </script>
 
-<h2>Sync</h2>
+<h2>Settings</h2>
+{#if error}<p class="error">{error}</p>{/if}
+{#if notice}<p class="notice">{notice}</p>{/if}
 
-{#if runtime.local}
-  <form class="panel" onsubmit={saveUrl}>
+<h3>Account</h3>
+<div class="panel">
+  <p>Signed in as <strong>{runtime.me?.display_name}</strong> <span class="hint">@{runtime.me?.username}</span></p>
+  <form class="inline-form" onsubmit={changePassword}>
     <label>
-      Server address
-      <input bind:value={url} placeholder={runtime.native ? 'http://192.168.1.20:8000' : 'this site'} inputmode="url" />
+      Current password
+      <input type="password" bind:value={currentPw} autocomplete="current-password" required />
     </label>
-    <p class="hint">
-      {#if runtime.native}
-        The computer running the ptrack server, e.g. http://192.168.1.20:8000. The phone works offline either way and
-        catches up when it can reach it.
-      {:else}
-        Leave empty to sync with the server this page came from.
-      {/if}
-    </p>
-    <div class="actions">
-      <button type="submit" class="primary" disabled={url.trim().replace(/\/$/, '') === runtime.serverUrl}>Save</button>
-    </div>
+    <label>
+      New password <span class="hint">(8+ characters)</span>
+      <input type="password" bind:value={newPw} autocomplete="new-password" minlength="8" required />
+    </label>
+    <button type="submit">Change password</button>
   </form>
 
+  <h3>Signed-in devices</h3>
+  <ul class="people">
+    {#each devices as d (d.id)}
+      <li>
+        <span class="grow">{d.name}{#if d.current} <span class="hint">(this device)</span>{/if}</span>
+        <time class="hint" title={exactTime(d.last_used_at)}>used {ago(d.last_used_at)}</time>
+        {#if !d.current}
+          <button onclick={() => run(() => account.signOutDevice(d.id), `Signed out ${d.name}.`)}>Sign out</button>
+        {/if}
+      </li>
+    {/each}
+  </ul>
+  <p class="hint">Lost a phone? Sign it out here; it forgets its copy of your tickets the next time it connects.</p>
+  <div class="actions">
+    <button class="danger" onclick={confirmSignOut}>Sign out on this device</button>
+  </div>
+</div>
+
+{#if runtime.local}
+  <h3>Sync</h3>
   <div class="panel">
     <dl class="facts">
+      <dt>Server</dt>
+      <dd class="mono">{runtime.serverUrl || 'this site'}</dd>
       <dt>Status</dt>
       <dd>
         {#if runtime.sync.syncing}Syncing…{:else if runtime.sync.error}<span class="error">{runtime.sync.error}</span
@@ -69,9 +144,47 @@
         device then matches the server again.
       </p>
     {/if}
+    <p class="hint">To use a different server, sign out and sign in again with its address.</p>
   </div>
-{:else}
-  <p class="panel">This browser talks to the server directly, so there's nothing to sync.</p>
+{/if}
+
+{#if runtime.me?.is_admin}
+  <h3>Family accounts</h3>
+  <div class="panel">
+    <ul class="people">
+      {#each family as u (u.id)}
+        <li>
+          <span class="grow">
+            {u.display_name} <span class="hint">@{u.username}</span>
+            {#if u.is_admin}<span class="role">Admin</span>{/if}
+            {#if u.disabled}<span class="role">Disabled</span>{/if}
+          </span>
+          <button onclick={() => resetPassword(u)}>Reset password</button>
+          {#if u.id !== runtime.me?.id}
+            <button onclick={() => toggleDisabled(u)}>{u.disabled ? 'Enable' : 'Disable'}</button>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    <form class="inline-form" onsubmit={addFamily}>
+      <label>
+        Username
+        <input bind:value={newUser.username} placeholder="sam" autocapitalize="off" required />
+      </label>
+      <label>
+        Name
+        <input bind:value={newUser.display_name} placeholder="Sam" />
+      </label>
+      <label>
+        Password <span class="hint">(8+)</span>
+        <input bind:value={newUser.password} minlength="8" required />
+      </label>
+      <button type="submit" class="primary">Add account</button>
+    </form>
+    <p class="hint">
+      New accounts start with no projects. Share a project with them from the Projects page.
+    </p>
+  </div>
 {/if}
 
 {#if !runtime.native}
@@ -79,7 +192,7 @@
   <div class="panel">
     <p class="hint">
       Offline-first mode makes this browser work like the phone app: it keeps its own copy of the data and syncs in the
-      background. Useful for testing without a phone.
+      background. Useful for testing without a phone. Switching asks you to sign in again.
     </p>
     <div class="actions">
       <button onclick={() => setBrowserOfflineMode(!runtime.local)}>

@@ -1,8 +1,9 @@
 <script lang="ts">
   import ReminderPicker from './ReminderPicker.svelte'
   import RepeatPicker from './RepeatPicker.svelte'
-  import { api, errorText, PRIORITIES, PRIORITY_LABELS, type Item, type Priority } from './lib/api'
+  import { api, errorText, type Item, type Member, PRIORITIES, PRIORITY_LABELS, type Priority } from './lib/api'
   import { formatDue, parseLabels } from './lib/format'
+  import { runtime } from './lib/runtime.svelte'
   import { filters, projects } from './lib/state.svelte'
 
   interface Props {
@@ -22,6 +23,20 @@
   let labels = $state('')
   let assignedOn = $state('')
   let reminders = $state<string[] | null>(null)
+  let assignee = $state('')
+  let members = $state<Member[]>([])
+
+  // Who can be assigned depends on the project.
+  $effect(() => {
+    const key = project
+    api.listMembers(key).then(
+      (m) => {
+        members = m
+        if (!m.some((x) => x.user_id === assignee)) assignee = ''
+      },
+      () => (members = []),
+    )
+  })
   let error = $state('')
 
   $effect.pre(() => {
@@ -41,6 +56,7 @@
         labels: parseLabels(labels),
         assigned_on: assignedOn || null,
         reminders,
+        assignee_id: assignee || null,
       })
       oncreated(item)
     } catch (err) {
@@ -65,6 +81,17 @@
         {/each}
       </select>
     </label>
+    {#if members.length > 1}
+      <label>
+        Assignee
+        <select bind:value={assignee}>
+          <option value="">Unassigned</option>
+          {#each members as m (m.user_id)}
+            <option value={m.user_id}>{m.user_id === runtime.me?.id ? `${m.display_name} (you)` : m.display_name}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
     <label>
       Priority
       <select bind:value={priority}>
@@ -98,7 +125,8 @@
       <input type="date" bind:value={assignedOn} />
     </label>
   </div>
-  {#if due}
+  {#if due && (!assignee || assignee === runtime.me?.id)}
+    <!-- Reminders belong to whoever the ticket is assigned to; they set their own. -->
     <div class="field">
       <span>Remind me <span class="hint">(on the phone)</span></span>
       <ReminderPicker value={reminders} timed={!!dueTime} onchange={(r) => (reminders = r)} />

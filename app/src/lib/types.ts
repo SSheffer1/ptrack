@@ -22,10 +22,28 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
   urgent: 'Urgent',
 }
 
+export type Role = 'owner' | 'editor'
+
 export interface Project {
   id: string
   key: string
   name: string
+  role: Role // yours
+}
+
+export interface User {
+  id: string
+  username: string
+  display_name: string
+  is_admin: boolean
+}
+
+export interface Member {
+  project_id: string
+  user_id: string
+  username: string
+  display_name: string
+  role: Role
 }
 
 export interface Item {
@@ -43,6 +61,8 @@ export interface Item {
   due_time: string | null // "HH:MM:SS"
   repeat: string | null // RRULE, see lib/recurrence.ts
   next_id: string | null // next copy of a recurring ticket, once this one is done
+  created_by: string | null // user id; null for tickets made on this device that haven't synced yet
+  assignee_id: string | null // a member of the project; null = unassigned
   assigned_on: string | null // only if set by hand
   assigned: string // assigned_on, or else the day it was created
   completed_on: string | null // set when marked done; can be changed
@@ -63,6 +83,7 @@ export interface ItemCreate {
   repeat?: string | null
   assigned_on?: string | null
   reminders?: string[] | null
+  assignee_id?: string | null
 }
 
 export type ItemUpdate = Partial<
@@ -79,6 +100,7 @@ export type ItemUpdate = Partial<
     | 'assigned_on'
     | 'completed_on'
     | 'reminders'
+    | 'assignee_id'
   >
 >
 
@@ -86,6 +108,7 @@ export interface Comment {
   id: string
   item_id: string
   body: string
+  created_by: string | null
   created_at: number
 }
 
@@ -95,6 +118,7 @@ export interface Change {
   value: unknown
   ts: number
   device_id: string
+  user_id: string
 }
 
 export interface ItemFilters {
@@ -106,6 +130,7 @@ export interface ItemFilters {
   due_to?: string
   completed_from?: string
   completed_to?: string
+  assignee?: 'me' // assigned to me, or unassigned and created by me
   sort?: SortOrder
 }
 
@@ -141,4 +166,16 @@ export interface Backend {
   getHistory(ref: string): Promise<Change[]>
   listComments(ref: string): Promise<Comment[]>
   addComment(ref: string, body: string): Promise<Comment>
+  // Sharing. Only the owner may rename/delete a project or add/remove others;
+  // anyone may remove themself (leave). Adding/removing members needs a connection.
+  updateProject(key: string, fields: { name?: string }): Promise<Project>
+  deleteProject(key: string): Promise<void>
+  listMembers(key: string): Promise<Member[]>
+  addMember(key: string, username: string): Promise<Member[]>
+  removeMember(key: string, userId: string): Promise<void>
+}
+
+/** Who gets a ticket's reminders, and who may change them: the assignee, else the creator. */
+export function notifiedUser(item: Pick<Item, 'assignee_id' | 'created_by'>, me: string): string {
+  return item.assignee_id ?? item.created_by ?? me
 }

@@ -11,6 +11,8 @@
     type Comment,
     type Item,
     type ItemUpdate,
+    type Member,
+    notifiedUser,
     type Priority,
     type Status,
   } from './lib/api'
@@ -20,6 +22,7 @@
   import { describeRule } from './lib/recurrence'
   import { describeOffset } from './lib/reminders'
   import { runtime } from './lib/runtime.svelte'
+  import { projects, userName } from './lib/state.svelte'
 
   let { ref }: { ref: string } = $props()
 
@@ -34,6 +37,12 @@
   let body = $state('')
   let labels = $state('')
   let newComment = $state('')
+  let members = $state<Member[]>([])
+
+  const project = $derived(projects.list.find((p) => p.id === item?.project_id))
+  const isOwner = $derived(project?.role === 'owner')
+  const me = $derived(runtime.me?.id ?? '')
+  const remindsMe = $derived(item ? notifiedUser(item, me) === me : false)
 
   async function load() {
     try {
@@ -45,6 +54,8 @@
       item = i
       comments = c
       history = h
+      const key = projects.list.find((p) => p.id === i.project_id)?.key
+      if (key) members = await api.listMembers(key).catch(() => members)
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) notFound = true
       else error = errorText(e)
@@ -141,6 +152,7 @@
       if (list === null) return 'reminders → default'
       return list.length ? `reminders → ${list.map((o) => describeOffset(o, !!item?.due_time)).join(', ')}` : 'reminders → none'
     }
+    if (c.field === 'assignee_id') return v ? `assigned to ${userName(v as string)}` : 'unassigned'
     if (c.field === 'completed_on') return v ? `${name} → ${formatDue(v as string)}` : `cleared ${name}`
     if (c.field === 'labels') return `${name} → ${(v as string[]).join(', ') || 'none'}`
     if (c.field === 'body') return `edited ${name}`
@@ -148,12 +160,20 @@
     return `${name} → “${v}”`
   }
 
+  // "android-…" → "phone": where an edit was made, next to who made it.
+  function deviceLabel(device: string): string {
+    if (device === 'server') return 'automatic'
+    if (device.startsWith('android-')) return 'phone'
+    if (device.startsWith('browser-')) return 'browser'
+    return device
+  }
+
   const events = $derived.by(() => {
-    const groups: { ts: number; device: string; changes: Change[] }[] = []
+    const groups: { ts: number; device: string; user: string; changes: Change[] }[] = []
     for (const c of history) {
       const last = groups.at(-1)
       if (last && last.ts === c.ts && last.device === c.device_id) last.changes.push(c)
-      else groups.push({ ts: c.ts, device: c.device_id, changes: [c] })
+      else groups.push({ ts: c.ts, device: c.device_id, user: c.user_id, changes: [c] })
     }
     return groups
       .map((g, i) => ({
@@ -231,6 +251,15 @@
         <input bind:value={labels} onblur={saveLabels} placeholder="comma separated" />
       </label>
       <label>
+        Assignee
+        <select value={item.assignee_id ?? ''} onchange={(e) => save({ assignee_id: e.currentTarget.value || null })}>
+          <option value="">Unassigned</option>
+          {#each members as m (m.user_id)}
+            <option value={m.user_id}>{m.user_id === me ? `${m.display_name} (you)` : m.display_name}</option>
+          {/each}
+        </select>
+      </label>
+      <label>
         Assigned
         <input
           type="date"
@@ -253,8 +282,12 @@
 
     {#if item.due}
       <div class="field">
-        <span>Remind me <span class="hint">(on the phone)</span></span>
-        <ReminderPicker value={item.reminders} timed={!!item.due_time} onchange={(reminders) => save({ reminders })} />
+        {#if remindsMe}
+          <span>Remind me <span class="hint">(on the phone)</span></span>
+          <ReminderPicker value={item.reminders} timed={!!item.due_time} onchange={(reminders) => save({ reminders })} />
+        {:else}
+          <span class="hint">Reminders for this ticket go to {userName(notifiedUser(item, me))}, who sets them.</span>
+        {/if}
       </div>
     {/if}
 
@@ -283,7 +316,7 @@
     {#each comments as c (c.id)}
       <div class="comment">
         <p>{c.body}</p>
-        <time title={exactTime(c.created_at)}>{ago(c.created_at)}</time>
+        <time title={exactTime(c.created_at)}>{c.created_by ? `${userName(c.created_by)} · ` : ''}{ago(c.created_at)}</time>
       </div>
     {:else}
       <p class="hint">No comments yet.</p>
@@ -298,14 +331,16 @@
       {#each events as ev (ev.ts + ev.device)}
         <li>
           <span>{ev.text}</span>
-          <time title={exactTime(ev.ts)}>{ago(ev.ts)} · {ev.device}</time>
+          <time title={exactTime(ev.ts)}>{ago(ev.ts)} · {userName(ev.user)} · {deviceLabel(ev.device)}</time>
         </li>
       {/each}
     </ul>
 
-    <div class="danger-zone">
-      <button class="danger" onclick={remove}>Delete ticket</button>
-    </div>
+    {#if isOwner}
+      <div class="danger-zone">
+        <button class="danger" onclick={remove}>Delete ticket</button>
+      </div>
+    {/if}
   </article>
 {:else if error}
   <p class="error">{error}</p>

@@ -3,12 +3,16 @@
 
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import type { LogEntry } from './store'
+import type { People } from './sync'
 
 export interface SavedState {
-  version: 1
+  version: 2
   deviceId: string
   serverUrl: string
+  token: string // '' = signed out
   cursor: number
+  epoch: number
+  people: People // who I am, and who's in my projects
   log: LogEntry[]
 }
 
@@ -18,7 +22,9 @@ const TEMP = 'ptrack.json.tmp'
 export async function loadState(): Promise<SavedState | null> {
   try {
     const { data } = await Filesystem.readFile({ path: FILE, directory: Directory.Data, encoding: Encoding.UTF8 })
-    return JSON.parse(data as string) as SavedState
+    const saved = JSON.parse(data as string)
+    // Version 1 (before accounts): same data, not signed in yet.
+    return { token: '', epoch: -1, people: { me: null, users: [], members: [] }, ...saved, version: 2 }
   } catch {
     return null // first run
   }

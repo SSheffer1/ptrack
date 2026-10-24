@@ -74,7 +74,7 @@ have a copy that must match (the app needs it to work offline).
 | Database file | `server/ptrack.db` | env `PTRACK_DB` (default `sqlite:///ptrack.db`), `server/src/ptrack/db.py` |
 | Built web app it serves | `app/dist` | env `PTRACK_STATIC`, `server/src/ptrack/main.py` |
 | Address / port | `0.0.0.0:8000` (all interfaces) | command line: `uv run fastapi dev src/ptrack/main.py --host 0.0.0.0` |
-| User | single user `owner`, no login yet | `server/src/ptrack/api.py` `OWNER_ID` (login: Milestone 6) |
+| Accounts | see *Accounts and sharing*; manage with `uv run ptrack-admin …` | `server/src/ptrack/admin.py` |
 | Firewall | ufw allows 8000/tcp from `192.168.68.0/22` | laptop's ufw rules (`sudo ufw status`) |
 
 ## Android app
@@ -85,6 +85,20 @@ have a copy that must match (the app needs it to work offline).
 | Icon | Capacitor default | `app/android/app/src/main/res/mipmap-*` |
 | Plain HTTP allowed | yes (until HTTPS, Milestone 6) | `app/android/app/src/main/AndroidManifest.xml` `usesCleartextTraffic` |
 | Android versions | min 7.0 (SDK 24), target 16 (SDK 36) | `app/android/variables.gradle` |
+
+## Accounts and sharing
+
+| Setting | Current value | Where |
+|---|---|---|
+| Who creates accounts | admins only (no sign-up) | `server/src/ptrack/auth.py` admin endpoints, `ptrack-admin` CLI |
+| Username format | lowercase letters, digits, `. _ -`; 2–32 chars, starts with a letter | `auth.py` `USERNAME_PATTERN` |
+| Minimum password length | 8 | `auth.py` `MIN_PASSWORD` |
+| Password hashing | scrypt, N=2^14, r=8, p=1 | `auth.py` `SCRYPT_N/R/P` |
+| Delay after a wrong password | 1 s | `auth.py` `login` |
+| Sign-in lasts | until signed out (per device; revocable) | `auth.py` `DeviceToken` |
+| Project roles | owner (everything), editor (create/edit/comment tickets) | `server/src/ptrack/models.py` `Role`, `sync.py` `_check_permission` |
+| Who gets a ticket's reminders | the assignee, or the creator if unassigned | `sync.py` `notified_user` |
+| Project keys | unique on the server; offline clashes get a number added (GYM → GYM2) | `sync.py` `_resolve_key_conflicts` |
 
 ## Development
 

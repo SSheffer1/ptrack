@@ -1,33 +1,70 @@
 // Keeps the on-device store in step with the server.
 //
 // One sync = POST /api/sync with this device's unsent entries and the cursor
-// from last time; the server answers with every entry after that cursor
-// (including ours, now numbered). Applying those to the store is safe in any
-// order because of last-write-wins (see store.ts). Repeat while `more` is true.
+// from last time; the server answers with every entry after that cursor in the
+// user's projects (including ours, now numbered). Applying those to the store
+// is safe in any order because of last-write-wins (see store.ts). Repeat while
+// `more` is true.
+//
+// The server may also answer:
+// - `dropped`: some of our edits weren't allowed (e.g. we were removed from the
+//   project while offline). They're discarded here.
+// - `reset`: the user's projects changed (joined or left one). We forget what
+//   we downloaded, keep our unsent edits, and take everything the server sends.
 
+import type { Member, Role, User } from '../types'
 import type { LocalStore, LogEntry } from './store'
 
 export interface SyncRequest {
   device_id: string
   since: number
-  changes: Omit<LogEntry, 'seq' | 'device_id'>[]
+  epoch: number
+  changes: Omit<LogEntry, 'seq' | 'device_id' | 'user_id'>[]
 }
 
-export interface SyncResponse {
-  changes: (LogEntry & { seq: number })[]
+export interface Membership {
+  project_id: string
+  user_id: string
+  role: Role
+}
+
+export interface People {
+  me: User | null
+  users: User[] // everyone sharing a project with me
+  members: Membership[]
+}
+
+export interface SyncResponse extends People {
+  changes: (LogEntry & { seq: number; user_id: string })[]
   cursor: number
   more: boolean
+  dropped: { entity: string; entity_id: string; field: string; ts: number; reason: string }[]
+  reset: boolean
+  epoch: number
 }
 
-/** Sends one sync request. Throws SyncRejected if the server refused the changes (HTTP 400). */
-export type Transport = (serverUrl: string, body: SyncRequest) => Promise<SyncResponse>
+/** Sends one sync request. Throws SyncRejected (HTTP 400) or SignedOut (HTTP 401). */
+export type Transport = (serverUrl: string, token: string, body: SyncRequest) => Promise<SyncResponse>
 
 export class SyncRejected extends Error {}
+export class SignedOut extends Error {}
 
 export interface SyncSettings {
   deviceId: string
   serverUrl: string // '' = same site the page came from (desktop browser testing)
+  token: string
   cursor: number
+  epoch: number // -1 = never synced
+}
+
+/** Member rows with names, for the UI. */
+export function membersWithNames(people: People, projectId: string): Member[] {
+  return people.members
+    .filter((m) => m.project_id === projectId)
+    .map((m) => {
+      const u = people.users.find((x) => x.id === m.user_id)
+      return { ...m, username: u?.username ?? '?', display_name: u?.display_name ?? 'Someone' }
+    })
 }
 
 export interface SyncStatus {
@@ -51,6 +88,8 @@ export class SyncEngine {
     private transport: Transport,
     private onChange: (dataChanged: boolean) => void, // save to disk, refresh the UI
     readonly status: SyncStatus = initialStatus(), // the UI passes a reactive object to watch
+    private onPeople: (people: People) => void = () => {},
+    private onSignedOut: () => void = () => {},
   ) {
     this.status.pending = store.pending(settings.deviceId).length
   }
@@ -68,15 +107,26 @@ export class SyncEngine {
     try {
       let outgoing = this.store.pending(this.settings.deviceId)
       for (;;) {
-        const res = await this.transport(this.settings.serverUrl, {
+        const res = await this.transport(this.settings.serverUrl, this.settings.token, {
           device_id: this.settings.deviceId,
           since: this.settings.cursor,
+          epoch: this.settings.epoch,
           changes: outgoing.map(({ entity, entity_id, field, value, ts }) => ({ entity, entity_id, field, value, ts })),
         })
+        if (res.reset) {
+          this.store.keepOnlyPending(this.settings.deviceId)
+          dataChanged = true
+        }
         for (const change of res.changes) {
           if (this.store.apply(change)) dataChanged = true
         }
+        if (res.dropped.length) {
+          this.store.removePending(this.settings.deviceId, res.dropped)
+          dataChanged = true
+        }
         this.settings.cursor = res.cursor
+        this.settings.epoch = res.epoch
+        this.onPeople({ me: res.me, users: res.users, members: res.members })
         if (!res.more) break
         // Later pages only download; our changes were accepted with the first request.
         outgoing = []
@@ -85,6 +135,7 @@ export class SyncEngine {
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
       this.update({ error: message, rejected: e instanceof SyncRejected })
+      if (e instanceof SignedOut) this.onSignedOut()
     } finally {
       this.update({ syncing: false, pending: this.store.pending(this.settings.deviceId).length })
       this.onChange(dataChanged)
@@ -110,12 +161,12 @@ export class SyncEngine {
 }
 
 /** Transport over fetch. On Android, CapacitorHttp routes fetch through native HTTP. */
-export const fetchTransport: Transport = async (serverUrl, body) => {
+export const fetchTransport: Transport = async (serverUrl, token, body) => {
   let res: Response
   try {
     res = await fetch(`${serverUrl.replace(/\/$/, '')}/api/sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     })
   } catch (e) {
@@ -124,6 +175,7 @@ export const fetchTransport: Transport = async (serverUrl, body) => {
     const hint = serverUrl.startsWith('https://') && /TLS|SSL/i.test(reason) ? ' (try http:// instead of https://)' : ''
     throw new Error(`Can't reach the server${serverUrl ? ` at ${serverUrl}` : ''}: ${reason}${hint}`)
   }
+  if (res.status === 401) throw new SignedOut('Signed out: sign in again')
   if (res.status === 400 || res.status === 422) {
     const detail = await res.json().then((j) => JSON.stringify(j.detail), () => res.statusText)
     throw new SyncRejected(`Server rejected changes: ${detail}`)
