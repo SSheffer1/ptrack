@@ -55,7 +55,8 @@ SOON = date.today() + timedelta(days=3)
 
 def make_recurring(client, **extra):
     body = {"project": "HOME", "title": "Lab report", "labels": ["lab"], "priority": "high",
-            "due": SOON.isoformat(), "due_time": "23:59", "repeat": "FREQ=WEEKLY", **extra}
+            "due": SOON.isoformat(), "due_time": "23:59", "repeat": "FREQ=WEEKLY",
+            "reminders": ["-1d"], **extra}
     r = client.post("/items", json=body)
     assert r.status_code == 201, r.text
     return r.json()
@@ -69,8 +70,8 @@ def test_completing_recurring_ticket_creates_next(client, home):
     assert nxt["key"] == "HOME-2"
     assert nxt["status"] == "todo"
     assert nxt["due"] == (SOON + timedelta(weeks=1)).isoformat()
-    assert (nxt["title"], nxt["labels"], nxt["priority"], nxt["due_time"], nxt["repeat"]) == (
-        "Lab report", ["lab"], "high", "23:59:00", "FREQ=WEEKLY")
+    assert (nxt["title"], nxt["labels"], nxt["priority"], nxt["due_time"], nxt["repeat"], nxt["reminders"]) == (
+        "Lab report", ["lab"], "high", "23:59:00", "FREQ=WEEKLY", ["-1d"])
 
 
 def test_reopening_and_redoing_does_not_duplicate(client, home):

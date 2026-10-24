@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟢 Milestone 3 (Android APK) done + pushed: offline-first app on the user's Android phone, syncing over home Wi-Fi (see K11 network caveat). Next: choose next milestone. Repo: https://github.com/SSheffer1/ptrack
+> **Status:** 🟢 Milestone 5 (reminders) done + pushed. Next: Milestone 6 (Debian deploy) planned for Monday night 2026-10-26 — see "Monday checklist". Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -177,10 +177,24 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 - Q2f. Does the home IP change (dynamic)? If yes, need a DDNS updater for the domain (Caddy plugin or small cron job).
 - Q2g. Who is the domain's DNS provider? (Affects DDNS + whether Caddy can use DNS challenge.)
 - Q9. Better name than "ptrack"? (Codename is fine until then.)
+- Q11. **User wants a single config file** for the choices listed in `CONFIGURATION.md` (e.g. `ptrack.toml` for the server + the in-app Settings page for per-device options) instead of constants spread across code. Keep CONFIGURATION.md updated whenever a setting changes or is added.
+- Q12. Data created so far (incl. reminder-test tickets) is test data, not expected to carry over. Decide at Milestone 6: start the Debian server with a fresh DB, or copy this one.
 
 ---
 
-## Resume here: Milestone 3 (Android APK)
+## Monday checklist: Milestone 6 (Debian deploy)
+
+Ask the user / have ready before starting:
+1. Is Debian installed on the AM4 box? Can this laptop SSH into it (user, address)? Is it wired to the router?
+2. DHCP reservation for the box in the Deco app (fixed address).
+3. Domain: which DNS provider (Q2g)? Needed for a real HTTPS cert at home via Caddy's DNS-01 challenge (API token).
+4. Home-only for now, or reachable from outside (port 443, approval to open a port)?
+5. Fresh database or copy the laptop's (Q12)?
+Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on start); Caddy reverse proxy (HTTPS, room for other services); login (password, long-lived device tokens for phone/browser); nightly SQLite backup with rotation; phone app → https:// and drop `usesCleartextTraffic` (K8); fixes K11 (wired server).
+
+---
+
+## Resume here: Milestone 3 (Android APK) — DONE, kept for reference
 
 **State when paused (2026-10-23):** all work committed + pushed (`fe7b77f`), except this log update. `~/Android/Sdk/cmdline-tools/latest` installed (verified). User was mid-install of `jdk21-openjdk android-tools` (sudo). Nothing Capacitor-related exists yet.
 
@@ -278,4 +292,5 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 5. ~~Milestone 2: Svelte UI (ticket list + detail) running in desktop browser against server.~~ Done 2026-10-23.
 6. ~~Milestone 4 (moved up, D-027): due times + calendar view (month + agenda) + recurring tickets.~~ Done 2026-10-23 (+ assigned/completed dates, migrations).
 7. ~~Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.~~ Done 2026-10-24 (change-log store instead of SQLite, D-032).
-8. Milestone 5: reminders. Milestone 6: deploy on Debian (Docker Compose + Caddy) + backups + login.
+8. ~~Milestone 5: reminders.~~ Done 2026-10-24 (phone-only local notifications).
+9. Milestone 6 (Mon 2026-10-26): deploy on Debian (Docker Compose + Caddy) + HTTPS + login + backups. Remaining v1 after that: kanban board, quick-add.

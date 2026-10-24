@@ -4,6 +4,7 @@ A personal issue tracker + calendar: tickets for yourself and calendar events in
 with an offline-capable Android app that syncs to a self-hosted server.
 
 > Working codename. Planning notes, decisions, and progress live in [PROJECT_LOG.md](PROJECT_LOG.md).
+> Every adjustable setting (reminder defaults, sync timing, …) is listed in [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Layout
 

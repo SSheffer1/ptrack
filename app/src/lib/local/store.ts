@@ -38,6 +38,7 @@ const DEFAULTS: Record<Entity, Record<string, unknown>> = {
     next_id: null,
     assigned_on: null,
     completed_on: null,
+    reminders: null,
     deleted: false,
   },
   comment: { item_id: '', body: '', deleted: false },
