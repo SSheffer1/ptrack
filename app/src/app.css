@@ -607,3 +607,54 @@ nav a.active {
 .done-text {
   color: var(--done);
 }
+
+/* --- Sync badge + settings ---------------------------------------------------- */
+
+.settings-link {
+  font-size: 0.8rem;
+}
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+}
+
+.sync-badge .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--done);
+}
+
+.sync-badge.busy .dot {
+  background: var(--warn);
+}
+
+.sync-badge.bad .dot {
+  background: var(--danger);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.8rem;
+}

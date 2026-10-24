@@ -4,6 +4,7 @@
   import { api, errorText, STATUSES, type Item } from './lib/api'
   import { addDays, dueTone, formatTime, toISODate } from './lib/format'
   import { filters, projects } from './lib/state.svelte'
+  import { runtime } from './lib/runtime.svelte'
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const todayISO = toISODate(new Date())
@@ -65,6 +66,7 @@
 
   const reload = () => load({ from: days[0].iso, to: days[days.length - 1].iso })
   $effect(() => {
+    void runtime.dataVersion // also refresh after a sync
     reload()
   })
 

@@ -17,6 +17,7 @@
   import RepeatPicker from './RepeatPicker.svelte'
   import { ago, dueTone, exactTime, formatDue, formatTime, parseLabels, timing } from './lib/format'
   import { describeRule } from './lib/recurrence'
+  import { runtime } from './lib/runtime.svelte'
 
   let { ref }: { ref: string } = $props()
 
@@ -35,18 +36,24 @@
   async function load() {
     try {
       const [i, c, h] = await Promise.all([api.getItem(ref), api.listComments(ref), api.getHistory(ref)])
+      // Take new values into the text fields, unless you're in the middle of editing one.
+      if (!item || title === item.title) title = i.title
+      if (!item || body === item.body) body = i.body
+      if (!item || labels === item.labels.join(', ')) labels = i.labels.join(', ')
       item = i
       comments = c
       history = h
-      title = i.title
-      body = i.body
-      labels = i.labels.join(', ')
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) notFound = true
       else error = errorText(e)
     }
   }
-  load()
+
+  // Load now, and again whenever a sync brings in changes.
+  $effect(() => {
+    void runtime.dataVersion
+    load()
+  })
 
   async function save(fields: ItemUpdate) {
     if (!item) return

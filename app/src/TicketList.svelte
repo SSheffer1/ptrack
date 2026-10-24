@@ -5,6 +5,7 @@
   import TicketRow from './TicketRow.svelte'
   import { api, errorText, SORT_LABELS, type Item, type ItemFilters, type SortOrder } from './lib/api'
   import { addProject, filters, projects } from './lib/state.svelte'
+  import { runtime } from './lib/runtime.svelte'
 
   let items = $state<Item[]>([])
   let error = $state('')
@@ -29,6 +30,7 @@
   const reload = () =>
     loadItems({ project: filters.project, status: [...filters.statuses], q: filters.q, sort: filters.sort })
   $effect(() => {
+    void runtime.dataVersion // also refresh after a sync
     reload()
   })
 </script>
