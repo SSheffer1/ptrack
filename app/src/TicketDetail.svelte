@@ -14,9 +14,11 @@
     type Priority,
     type Status,
   } from './lib/api'
+  import ReminderPicker from './ReminderPicker.svelte'
   import RepeatPicker from './RepeatPicker.svelte'
   import { ago, dueTone, exactTime, formatDue, formatTime, parseLabels, timing } from './lib/format'
   import { describeRule } from './lib/recurrence'
+  import { describeOffset } from './lib/reminders'
   import { runtime } from './lib/runtime.svelte'
 
   let { ref }: { ref: string } = $props()
@@ -134,6 +136,11 @@
     if (c.field === 'repeat') return v ? `repeat → ${describeRule(v as string)}` : 'stopped repeating'
     if (c.field === 'next_id') return 'created the next occurrence'
     if (c.field === 'assigned_on') return v ? `${name} → ${formatDue(v as string)}` : `${name} → created date`
+    if (c.field === 'reminders') {
+      const list = v as string[] | null
+      if (list === null) return 'reminders → default'
+      return list.length ? `reminders → ${list.map((o) => describeOffset(o, !!item?.due_time)).join(', ')}` : 'reminders → none'
+    }
     if (c.field === 'completed_on') return v ? `${name} → ${formatDue(v as string)}` : `cleared ${name}`
     if (c.field === 'labels') return `${name} → ${(v as string[]).join(', ') || 'none'}`
     if (c.field === 'body') return `edited ${name}`
@@ -243,6 +250,13 @@
         </label>
       {/if}
     </div>
+
+    {#if item.due}
+      <div class="field">
+        <span>Remind me <span class="hint">(on the phone)</span></span>
+        <ReminderPicker value={item.reminders} timed={!!item.due_time} onchange={(reminders) => save({ reminders })} />
+      </div>
+    {/if}
 
     {#if item.next_id}
       <p class="notice">

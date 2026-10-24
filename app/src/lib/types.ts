@@ -46,6 +46,7 @@ export interface Item {
   assigned_on: string | null // only if set by hand
   assigned: string // assigned_on, or else the day it was created
   completed_on: string | null // set when marked done; can be changed
+  reminders: string[] | null // offsets like "-8h"; null = default, [] = none (see reminders.ts)
   created_at: number
   updated_at: number
 }
@@ -61,12 +62,23 @@ export interface ItemCreate {
   due_time?: string | null
   repeat?: string | null
   assigned_on?: string | null
+  reminders?: string[] | null
 }
 
 export type ItemUpdate = Partial<
   Pick<
     Item,
-    'title' | 'body' | 'status' | 'priority' | 'labels' | 'due' | 'due_time' | 'repeat' | 'assigned_on' | 'completed_on'
+    | 'title'
+    | 'body'
+    | 'status'
+    | 'priority'
+    | 'labels'
+    | 'due'
+    | 'due_time'
+    | 'repeat'
+    | 'assigned_on'
+    | 'completed_on'
+    | 'reminders'
   >
 >
 

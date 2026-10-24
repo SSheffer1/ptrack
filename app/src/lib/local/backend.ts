@@ -18,6 +18,7 @@ import {
   type Project,
 } from '../types'
 import { toISODate } from '../format'
+import { isValidOffset, normalizeReminders } from '../reminders'
 import type { Entity, LocalStore, Row } from './store'
 
 const KEY_RE = /^([A-Z][A-Z0-9]{0,9})-(\d+)$/
@@ -146,6 +147,7 @@ export class LocalBackend implements Backend {
     if (!project) throw new ApiError(404, `project ${body.project} not found`)
     if (!body.title?.trim()) throw new ApiError(422, 'title: must not be empty')
     checkRepeat(body.repeat)
+    checkReminders(body.reminders)
     const id = newId()
     const status = body.status ?? 'todo'
     this.write('item', id, {
@@ -160,6 +162,7 @@ export class LocalBackend implements Backend {
       due_time: normalizeTime(body.due_time ?? null),
       repeat: normalizeRepeat(body.repeat ?? null),
       assigned_on: body.assigned_on ?? null,
+      reminders: normalizeReminders(body.reminders),
       ...(status === 'done' ? { completed_on: toISODate(new Date()) } : {}),
     })
     return this.getItem(id)
@@ -169,9 +172,11 @@ export class LocalBackend implements Backend {
     const row = this.findItem(ref)
     if ('title' in fields && !fields.title?.trim()) throw new ApiError(422, 'title: must not be empty')
     if ('repeat' in fields) checkRepeat(fields.repeat)
+    if ('reminders' in fields) checkReminders(fields.reminders)
     const changes: Record<string, unknown> = { ...fields }
     if ('due_time' in fields) changes.due_time = normalizeTime(fields.due_time ?? null)
     if ('repeat' in fields) changes.repeat = normalizeRepeat(fields.repeat ?? null)
+    if ('reminders' in fields) changes.reminders = normalizeReminders(fields.reminders)
 
     // Completion date follows the status (the server keeps a date sent explicitly).
     if ('status' in fields && !('completed_on' in fields)) {
@@ -243,4 +248,10 @@ function checkRepeat(rule: string | null | undefined) {
     throw new ApiError(400, `invalid repeat rule ${r}`)
   }
   if (r.includes('COUNT=')) throw new ApiError(400, "COUNT isn't supported; use UNTIL=YYYYMMDD to end a repeat")
+}
+
+function checkReminders(list: string[] | null | undefined) {
+  for (const r of normalizeReminders(list) ?? []) {
+    if (!isValidOffset(r)) throw new ApiError(400, `invalid reminder ${r}; use e.g. 0, -30m, -8h, -1d`)
+  }
 }

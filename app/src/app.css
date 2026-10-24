@@ -135,7 +135,8 @@ button.danger {
   color: var(--danger);
 }
 
-label {
+label,
+.field {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -657,4 +658,30 @@ nav a.active {
 .mono {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 0.8rem;
+}
+
+/* --- Reminders ------------------------------------------------------------------ */
+
+.reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reminders .chips {
+  margin: 0;
+}
+
+.reminders .chip.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+button.link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: inherit;
+  cursor: pointer;
 }

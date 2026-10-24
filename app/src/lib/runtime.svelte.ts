@@ -12,12 +12,14 @@ import { LocalBackend } from './local/backend'
 import { loadState, saveState } from './local/persist'
 import { LocalStore } from './local/store'
 import { fetchTransport, initialStatus, SyncEngine } from './local/sync'
+import { openTicketOnTap, scheduleReminders } from './notify'
 import type { Backend } from './types'
 
 const LOCAL_FLAG = 'ptrack.offlineMode' // browser-only testing switch, kept in localStorage
 const SYNC_EVERY_MS = 30_000
 const SYNC_AFTER_EDIT_MS = 1_000
 const SAVE_AFTER_EDIT_MS = 300
+const RESCHEDULE_AFTER_MS = 2_000
 
 function browserFlag(): boolean {
   try {
@@ -41,6 +43,20 @@ const store = new LocalStore()
 let engine: SyncEngine | null = null
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let syncTimer: ReturnType<typeof setTimeout> | undefined
+let reminderTimer: ReturnType<typeof setTimeout> | undefined
+
+// Phone only: re-plan notifications shortly after the data changes.
+function scheduleReminderUpdate() {
+  if (!runtime.native) return
+  clearTimeout(reminderTimer)
+  reminderTimer = setTimeout(async () => {
+    try {
+      await scheduleReminders(await localBackend.listItems())
+    } catch (e) {
+      console.error('scheduling reminders failed', e)
+    }
+  }, RESCHEDULE_AFTER_MS)
+}
 
 function scheduleSave() {
   clearTimeout(saveTimer)
@@ -59,6 +75,7 @@ const localBackend = new LocalBackend(
   () => {
     engine?.noteLocalChange()
     scheduleSave()
+    scheduleReminderUpdate()
     clearTimeout(syncTimer)
     syncTimer = setTimeout(syncNow, SYNC_AFTER_EDIT_MS)
   },
@@ -80,7 +97,10 @@ export async function init() {
       fetchTransport,
       (dataChanged) => {
         scheduleSave()
-        if (dataChanged) runtime.dataVersion++
+        if (dataChanged) {
+          runtime.dataVersion++
+          scheduleReminderUpdate()
+        }
       },
       runtime.sync,
     )
@@ -89,6 +109,8 @@ export async function init() {
     setInterval(syncNow, SYNC_EVERY_MS)
     if (runtime.native) {
       CapApp.addListener('resume', syncNow)
+      openTicketOnTap()
+      scheduleReminderUpdate()
     }
   }
   runtime.ready = true

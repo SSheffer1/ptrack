@@ -69,6 +69,9 @@ class Item(SQLModel, table=True):
     next_id: str | None = None  # the copy created when this recurring ticket was done
     assigned_on: date | None = None  # when it was handed to you; None = the day it was created
     completed_on: date | None = None  # set automatically when marked done; can be changed
+    # When the phone should remind you, relative to the due date/time: "-8h", "-1d", "0".
+    # None = the default (see reminders.py); [] = no reminders.
+    reminders: list[str] | None = Field(default=None, sa_column=Column(JSON))
     created_at: int = 0
     updated_at: int = 0
     deleted: bool = False

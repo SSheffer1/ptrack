@@ -96,6 +96,7 @@ class ItemCreate(BaseModel):
     due_time: time | None = None
     repeat: str | None = None  # RRULE, e.g. "FREQ=WEEKLY;BYDAY=FR"
     assigned_on: date | None = None  # leave out to use today
+    reminders: list[str] | None = None  # None = default; see reminders.py
 
 
 class ItemUpdate(BaseModel):
@@ -109,6 +110,7 @@ class ItemUpdate(BaseModel):
     repeat: str | None = None
     assigned_on: date | None = None  # null = back to the created date
     completed_on: date | None = None
+    reminders: list[str] | None = None  # null = back to the default
 
 
 class ItemRead(BaseModel):
@@ -129,6 +131,7 @@ class ItemRead(BaseModel):
     assigned_on: date | None  # only if set by hand
     assigned: date  # assigned_on, or else the day it was created
     completed_on: date | None
+    reminders: list[str] | None  # None = default
     created_at: int
     updated_at: int
 

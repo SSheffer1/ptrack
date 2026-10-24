@@ -27,6 +27,7 @@ from sqlmodel import Session, SQLModel, col, select
 
 from .models import Change, Comment, Item, ItemType, Project, Status
 from .recurrence import next_due, normalize_rule
+from .reminders import normalize_reminders
 
 ENTITIES: dict[str, type[SQLModel]] = {"project": Project, "item": Item, "comment": Comment}
 
@@ -36,6 +37,7 @@ SERVER_FIELDS = {"id", "owner_id", "created_at", "updated_at", "number", "next_n
 # Extra checks beyond the column type. Each returns the cleaned value or raises ValueError.
 FIELD_CHECKS: dict[tuple[str, str], Callable[[Any], Any]] = {
     ("item", "repeat"): normalize_rule,
+    ("item", "reminders"): normalize_reminders,
 }
 
 # Device ids used by the server itself; phones can't claim them.
@@ -183,7 +185,7 @@ def _update_completion_dates(session: Session, status_changed: dict[str, int], e
 
 
 # Copied from a recurring ticket to its next occurrence.
-RECURRING_FIELDS = ["type", "project_id", "title", "body", "priority", "labels", "due_time", "repeat"]
+RECURRING_FIELDS = ["type", "project_id", "title", "body", "priority", "labels", "due_time", "repeat", "reminders"]
 
 
 def _spawn_next_occurrences(session: Session, owner_id: str, status_changed: list[str]) -> None:

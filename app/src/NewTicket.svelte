@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ReminderPicker from './ReminderPicker.svelte'
   import RepeatPicker from './RepeatPicker.svelte'
   import { api, errorText, PRIORITIES, PRIORITY_LABELS, type Item, type Priority } from './lib/api'
   import { formatDue, parseLabels } from './lib/format'
@@ -20,6 +21,7 @@
   let repeat = $state<string | null>(null)
   let labels = $state('')
   let assignedOn = $state('')
+  let reminders = $state<string[] | null>(null)
   let error = $state('')
 
   $effect.pre(() => {
@@ -38,6 +40,7 @@
         repeat,
         labels: parseLabels(labels),
         assigned_on: assignedOn || null,
+        reminders,
       })
       oncreated(item)
     } catch (err) {
@@ -95,6 +98,12 @@
       <input type="date" bind:value={assignedOn} />
     </label>
   </div>
+  {#if due}
+    <div class="field">
+      <span>Remind me <span class="hint">(on the phone)</span></span>
+      <ReminderPicker value={reminders} timed={!!dueTime} onchange={(r) => (reminders = r)} />
+    </div>
+  {/if}
   {#if error}<p class="error">{error}</p>{/if}
   <div class="actions">
     <button type="button" onclick={oncancel}>Cancel</button>
