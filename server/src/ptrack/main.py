@@ -5,7 +5,6 @@ Everything the API does lives under /api. If the web app has been built
 handles both the pages and the data.
 """
 
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -17,10 +16,10 @@ from .api import router
 from .auth import admin_router, public_router
 from .auth import router as auth_router
 from .auth import current_actor
+from .config import settings
 from .db import init_db
 
-# Default: ptrack/app/dist next to the server/ directory.
-STATIC_DIR = Path(os.environ.get("PTRACK_STATIC", Path(__file__).parents[3] / "app" / "dist"))
+STATIC_DIR = Path(settings.static_dir)
 
 
 @asynccontextmanager

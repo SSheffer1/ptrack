@@ -21,11 +21,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session, col, select
 
+from .config import settings
 from .db import SessionDep
 from .models import DeviceToken, Member, Role, User
 
 SCRYPT_N, SCRYPT_R, SCRYPT_P = 2**14, 8, 1
-MIN_PASSWORD = 8
+MIN_PASSWORD = settings.min_password_length
+DAY_MS = 24 * 60 * 60 * 1000
 USERNAME_PATTERN = r"^[a-z][a-z0-9_.-]{1,31}$"
 
 
@@ -114,6 +116,9 @@ def current_actor(session: SessionDep, authorization: Annotated[str | None, Head
     device = session.exec(
         select(DeviceToken).where(DeviceToken.token_hash == _token_hash(authorization.removeprefix("Bearer ")))
     ).first()
+    if device and settings.device_idle_days and wall_ms() - device.last_used_at > settings.device_idle_days * DAY_MS:
+        device.revoked = True  # unused for too long (accounts.device_idle_days)
+        session.commit()
     user = session.get(User, device.user_id) if device and not device.revoked else None
     if device is None or user is None or user.disabled:
         raise HTTPException(401, "signed out (or the account was disabled)", headers={"WWW-Authenticate": "Bearer"})
@@ -166,7 +171,7 @@ admin_router = APIRouter(dependencies=[Depends(require_admin)])
 def login(body: LoginRequest, session: SessionDep) -> LoginResponse:
     user = session.exec(select(User).where(User.username == body.username.strip().lower())).first()
     if user is None or user.disabled or not verify_password(body.password, user.password_hash):
-        time.sleep(1)  # slow down password guessing
+        time.sleep(settings.login_delay_seconds)  # slow down password guessing
         raise HTTPException(401, "wrong username or password")
     token = issue_token(session, user, body.device_name or "unnamed device")
     session.commit()

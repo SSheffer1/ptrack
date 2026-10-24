@@ -80,5 +80,8 @@ export const httpBackend: Backend = {
   addMember: (key: string, username: string) =>
     request<Member[]>('POST', `/projects/${enc(key)}/members`, { username }),
   removeMember: (key: string, userId: string) => request<void>('DELETE', `/projects/${enc(key)}/members/${enc(userId)}`),
+
+  getPrefs: () => request<Record<string, unknown>>('GET', '/me/prefs'),
+  updatePrefs: (values: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', '/me/prefs', values),
 }
 

@@ -1,109 +1,117 @@
 # ptrack configuration
 
-Every choice that's currently configured, where it lives, and its current value.
-To change one, ask: "change <setting> to <value>".
+ptrack's settings come in three kinds:
 
-> **Future wish:** put these in a single config file (e.g. `ptrack.toml` for the
-> server, plus the in-app Settings screen for per-device options) instead of
-> having them spread across code. Tracked in PROJECT_LOG.md (Q11).
+1. **Server settings**, in `server/ptrack.toml`, for whoever runs the server.
+2. **Personal preferences**, set by each person in the app (Settings → Preferences)
+   and synced to all their devices.
+3. **Built-in behavior**, fixed in the code. Changing these means changing the code.
 
-Paths are relative to the repo root. "Both" means the server and the app each
-have a copy that must match (the app needs it to work offline).
+Paths are relative to the repo root. "Both" means the server and the app each have
+a copy that must match (the app needs it to work offline).
 
-## Reminders
+## 1. Server settings (`server/ptrack.toml`)
 
-| Setting | Current value | Where |
+Copy `server/ptrack.example.toml` to `server/ptrack.toml` and edit it; anything
+left out uses the default. `uv run ptrack-admin show-config` prints what's in
+effect. Loaded by `server/src/ptrack/config.py`; unknown or misspelled settings
+are an error. Environment variables `PTRACK_CONFIG` (which file), `PTRACK_DB` and
+`PTRACK_STATIC` override the file.
+
+| Setting | Default | What it does |
 |---|---|---|
-| Default reminder, ticket with a due time | 8 hours before (`-8h`) | `app/src/lib/reminders.ts` `defaultReminders` (+ docstring in `server/src/ptrack/reminders.py`) |
-| Default reminder, ticket without a time | 9:00 AM on the due day (`0`) | same |
-| Hour used for "due" on untimed tickets | 9 (9:00 AM) | `app/src/lib/reminders.ts` `UNTIMED_HOUR` |
+| `[server] host` | `127.0.0.1` | `0.0.0.0` makes the server reachable from phones on the network |
+| `[server] port` | `8000` | |
+| `[server] static_dir` | `app/dist` in this checkout | the built web app served at `/` |
+| `[database] url` | `sqlite:///ptrack.db` | where the data lives |
+| `[accounts] min_password_length` | `8` | |
+| `[accounts] login_delay_seconds` | `1` | pause after a wrong password, to slow down guessing |
+| `[accounts] device_idle_days` | `0` (never) | sign out devices unused for this many days |
+| `[sync] page_size` | `1000` | changes per sync response |
+
+Accounts themselves are managed with `uv run ptrack-admin …` (see
+[server/COMMANDS.md](../server/COMMANDS.md)) or in the app (Settings → Family
+accounts, for admins).
+
+## 2. Personal preferences (in the app)
+
+Each person sets their own in Settings → Preferences. They're saved as you change
+them and synced like tickets, but only to your own devices. Defaults and the code
+that uses them: `app/src/lib/prefs.svelte.ts`. The server checks and stores them:
+`server/src/ptrack/prefs.py` (both).
+
+| Preference | Default | Affects |
+|---|---|---|
+| Default reminders, timed tickets | 8 hours before | tickets with a due time whose reminders you haven't picked |
+| Default reminders, untimed tickets | at the due hour on the day | tickets without a time, likewise |
+| Untimed tickets are due at | 9 AM | when reminders for untimed tickets count from |
+| Weeks start on | Sunday | the month calendar |
+| Due dates turn orange | 2 days ahead | list, agenda, calendar, ticket page |
+| Statuses shown when the app opens | all except Done | the status chips' starting state |
+| List sorted by | Newest last | the List view's starting sort |
+
+Per device (not synced): the **server address**, entered when signing in on the
+phone, and the browser-only **offline-first test mode** switch.
+
+## 3. Built-in behavior
+
+### Reminders
+
+| Behavior | Value | Where |
+|---|---|---|
 | One-tap reminder choices (timed) | at due time, 1 h, 8 h, 1 day, 2 days, 1 week before | `app/src/lib/reminders.ts` `reminderChoices` |
-| One-tap reminder choices (untimed) | 9 AM on the day, day before, 2 days, 1 week before | same |
-| Allowed offset format | `0` or `-<n>m/h/d` (up to 4 digits) | both: `server/src/ptrack/reminders.py` `OFFSET_RE`, `app/src/lib/reminders.ts` `OFFSET_RE` |
-| Max reminders scheduled on the phone at once | 50 (soonest first) | `app/src/lib/reminders.ts` `upcomingReminders(limit)` |
-| Delay before re-planning reminders after a change | 2 s | `app/src/lib/runtime.svelte.ts` `RESCHEDULE_AFTER_MS` |
-| Where notifications appear | phone only | `app/src/lib/runtime.svelte.ts` (`runtime.native` check) |
+| One-tap reminder choices (untimed) | on the day, day before, 2 days, 1 week before | same |
+| Offset format | `0` or `-<n>m/h/d` (up to 4 digits) | both: `server/src/ptrack/reminders.py`, `app/src/lib/reminders.ts` `OFFSET_RE` |
+| Who gets a ticket's reminders | the assignee, or the creator if unassigned | both: `server/src/ptrack/sync.py` `notified_user`, `app/src/lib/types.ts` `notifiedUser` |
+| Max reminders scheduled on a phone | 50 (soonest first) | `app/src/lib/reminders.ts` `upcomingReminders` |
+| Where notifications appear | the Android app only | `app/src/lib/runtime.svelte.ts` |
 
-## Recurring tickets
+### Recurring tickets
 
-| Setting | Current value | Where |
+| Behavior | Value | Where |
 |---|---|---|
 | Repeat presets | every day / weekday (Mon–Fri) / week / 2 weeks / month / year | `app/src/lib/recurrence.ts` `REPEAT_PRESETS` |
 | Finished late → next due date | first occurrence from today on (skips missed ones) | `server/src/ptrack/recurrence.py` `next_due` |
-| Fields copied to the next copy | project, title, description, priority, labels, due time, repeat, reminders | `server/src/ptrack/sync.py` `RECURRING_FIELDS` |
+| Copied to the next copy | project, title, description, priority, labels, due time, repeat, reminders, assignee, creator | `server/src/ptrack/sync.py` `RECURRING_FIELDS` |
 | `COUNT=` in rules | rejected (use `UNTIL=`) | both: `recurrence.py` `normalize_rule`, `app/src/lib/local/backend.ts` `checkRepeat` |
 
-## Tickets and projects
+### Tickets, projects and sharing
 
-| Setting | Current value | Where |
+| Behavior | Value | Where |
 |---|---|---|
-| Statuses | Backlog, To do, In progress, Blocked, Done | both: `server/src/ptrack/models.py` `Status`, `app/src/lib/types.ts` `STATUSES` / `STATUS_LABELS` |
-| Priorities | No priority, Low, Medium, High, Urgent | both: `models.py` `Priority`, `types.ts` `PRIORITIES` / `PRIORITY_LABELS` |
-| New ticket defaults | status To do, priority none, no labels | `server/src/ptrack/api.py` `ItemCreate`, `app/src/lib/local/backend.ts` `createItem` |
-| Project key format | 1–10 chars, A–Z and 0–9, starts with a letter | both: `api.py` `ProjectCreate`, `backend.ts` `PROJECT_KEY_RE` |
-| "Assigned" date default | the day the ticket was created | `api.py` `_read`, `backend.ts` `toItem` |
-| Completion date | set to the day it's marked done, cleared when reopened | `server/src/ptrack/sync.py` `_update_completion_dates`, `backend.ts` `updateItem` |
+| Statuses | Backlog, To do, In progress, Blocked, Done | both: `server/src/ptrack/models.py` `Status`, `app/src/lib/types.ts` `STATUSES` |
+| Priorities | No priority, Low, Medium, High, Urgent | both: `models.py` `Priority`, `types.ts` `PRIORITIES` |
+| New ticket defaults | To do, no priority, no labels, unassigned | `server/src/ptrack/api.py` `ItemCreate`, `backend.ts` `createItem` |
+| Project keys | 1–10 chars, A–Z and 0–9, starting with a letter; unique on the server; offline clashes become GYM → GYM2 | both: `api.py`, `backend.ts`; `sync.py` `_resolve_key_conflicts` |
+| Roles | owner: everything; editor: create, edit, comment on tickets | both: `sync.py` `_check_permission`, `backend.ts` |
+| "Assigned" date | the day the ticket was created, unless set | `api.py` `_read`, `backend.ts` `toItem` |
+| Completion date | the day it's marked done; cleared when reopened | `sync.py` `_update_completion_dates`, `backend.ts` `updateItem` |
+| Calendar: finished tickets | always shown, struck through, on the day completed | `app/src/CalendarMonth.svelte` |
+| Date/time formats, light/dark theme | follow the device | `app/src/lib/format.ts`, `app/src/app.css` |
 
-## Views
+### Accounts
 
-| Setting | Current value | Where |
+| Behavior | Value | Where |
 |---|---|---|
-| Statuses shown by default | everything except Done | `app/src/lib/state.svelte.ts` `filters.statuses` |
-| Default list sort | Newest last (by created) | `app/src/lib/state.svelte.ts` `filters.sort` |
-| Calendar: finished tickets | always shown, struck through, on the day completed | `app/src/CalendarMonth.svelte` `load` |
-| Calendar week starts on | Sunday | `app/src/CalendarMonth.svelte` `WEEKDAYS` + `days` |
-| Due date turns orange ("soon") | 2 days or less away | `app/src/lib/format.ts` `dueTone` |
-| Date/time formats | your device's locale | `app/src/lib/format.ts` |
-| Light/dark theme | follows the system setting | `app/src/app.css` (`prefers-color-scheme`) |
+| Who creates accounts | admins only (no sign-up) | `server/src/ptrack/auth.py`, `admin.py` |
+| Username format | lowercase letters, digits, `. _ -`; 2–32 chars, starting with a letter | `auth.py` `USERNAME_PATTERN` |
+| Password hashing | scrypt, N=2^14, r=8, p=1 | `auth.py` `SCRYPT_N/R/P` |
+| Signing out a device | removes that device's copy of the data the next time it connects | `app/src/lib/runtime.svelte.ts` `forgetSession` |
 
-## Sync (phone app)
+### Sync timing (phone app)
 
-| Setting | Current value | Where |
+| Behavior | Value | Where |
 |---|---|---|
-| Server address | set per device in the app's Settings page | stored in the app's `files/ptrack.json` |
-| Sync every | 30 s while open, plus on app start and when you switch back to it | `app/src/lib/runtime.svelte.ts` `SYNC_EVERY_MS` |
-| Sync after an edit | 1 s later | same, `SYNC_AFTER_EDIT_MS` |
-| Save to storage after an edit | 300 ms later | same, `SAVE_AFTER_EDIT_MS` |
-| Changes per sync page | 1000 | `server/src/ptrack/api.py` `SYNC_PAGE_SIZE` |
-| Conflict rule | latest edit wins, per field | `server/src/ptrack/sync.py`, `app/src/lib/local/store.ts` |
+| Sync | on start, every 30 s, 1 s after an edit, when you switch back to the app | `app/src/lib/runtime.svelte.ts` `SYNC_*` |
+| Save to the phone's storage | 300 ms after an edit | same, `SAVE_AFTER_EDIT_MS` |
+| Re-plan reminders | 2 s after any change | same, `RESCHEDULE_AFTER_MS` |
+| Conflicts | latest edit wins, per field | both: `server/src/ptrack/sync.py`, `app/src/lib/local/store.ts` |
 
-## Server
+### Android app
 
-| Setting | Current value | Where |
-|---|---|---|
-| Database file | `server/ptrack.db` | env `PTRACK_DB` (default `sqlite:///ptrack.db`), `server/src/ptrack/db.py` |
-| Built web app it serves | `app/dist` | env `PTRACK_STATIC`, `server/src/ptrack/main.py` |
-| Address / port | `0.0.0.0:8000` (all interfaces) | command line: `uv run fastapi dev src/ptrack/main.py --host 0.0.0.0` |
-| Accounts | see *Accounts and sharing*; manage with `uv run ptrack-admin …` | `server/src/ptrack/admin.py` |
-| Firewall | ufw allows 8000/tcp from `192.168.68.0/22` | laptop's ufw rules (`sudo ufw status`) |
-
-## Android app
-
-| Setting | Current value | Where |
+| Behavior | Value | Where |
 |---|---|---|
 | App id / name | `io.github.ssheffer1.ptrack` / ptrack | `app/capacitor.config.ts` |
 | Icon | Capacitor default | `app/android/app/src/main/res/mipmap-*` |
-| Plain HTTP allowed | yes (until HTTPS, Milestone 6) | `app/android/app/src/main/AndroidManifest.xml` `usesCleartextTraffic` |
-| Android versions | min 7.0 (SDK 24), target 16 (SDK 36) | `app/android/variables.gradle` |
-
-## Accounts and sharing
-
-| Setting | Current value | Where |
-|---|---|---|
-| Who creates accounts | admins only (no sign-up) | `server/src/ptrack/auth.py` admin endpoints, `ptrack-admin` CLI |
-| Username format | lowercase letters, digits, `. _ -`; 2–32 chars, starts with a letter | `auth.py` `USERNAME_PATTERN` |
-| Minimum password length | 8 | `auth.py` `MIN_PASSWORD` |
-| Password hashing | scrypt, N=2^14, r=8, p=1 | `auth.py` `SCRYPT_N/R/P` |
-| Delay after a wrong password | 1 s | `auth.py` `login` |
-| Sign-in lasts | until signed out (per device; revocable) | `auth.py` `DeviceToken` |
-| Project roles | owner (everything), editor (create/edit/comment tickets) | `server/src/ptrack/models.py` `Role`, `sync.py` `_check_permission` |
-| Who gets a ticket's reminders | the assignee, or the creator if unassigned | `sync.py` `notified_user` |
-| Project keys | unique on the server; offline clashes get a number added (GYM → GYM2) | `sync.py` `_resolve_key_conflicts` |
-
-## Development
-
-| Setting | Current value | Where |
-|---|---|---|
-| Dev web server | Vite on :5173, forwards `/api` to `localhost:8000` | `app/vite.config.ts` |
-| Git identity (this repo) | `SSheffer1 <235915830+SSheffer1@users.noreply.github.com>` | `.git/config` (repo-local, not committed) |
-| SSH key for pushes | `~/.ssh/thinkarchshr` | `.git/config` `core.sshCommand` |
+| Plain HTTP allowed | yes, until the server has HTTPS | `app/android/app/src/main/AndroidManifest.xml` `usesCleartextTraffic` |
+| Android versions | 7.0 (SDK 24) and up, targets 16 (SDK 36) | `app/android/variables.gradle` |

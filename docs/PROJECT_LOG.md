@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟢 **Milestone 7 (multi-user) done + pushed** (with README rewrite + docs/ move). Next: configuration (per-user settings + server config file, Q11). Milestone 6 = v1.0 release, Debian fresh install, Mon 2026-10-26. Repo: https://github.com/SSheffer1/ptrack
+> **Status:** 🟢 Configuration done + pushed (server `ptrack.toml`, per-user preferences, `server/COMMANDS.md`). Next: **Milestone 6 = v1.0 release** on the Debian box (fresh install), Mon 2026-10-26 — see "Monday checklist". Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -177,7 +177,7 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 - Q2f. Does the home IP change (dynamic)? If yes, need a DDNS updater for the domain (Caddy plugin or small cron job).
 - Q2g. Who is the domain's DNS provider? (Affects DDNS + whether Caddy can use DNS challenge.)
 - Q9. Better name than "ptrack"? (Codename is fine until then.)
-- Q11. **User wants a single config file** for the choices listed in `CONFIGURATION.md` (e.g. `ptrack.toml` for the server + the in-app Settings page for per-device options) instead of constants spread across code. Keep CONFIGURATION.md updated whenever a setting changes or is added.
+- ~~Q11.~~ Done 2026-10-24 (D-038). Was: **User wants a single config file** for the choices listed in `CONFIGURATION.md` (e.g. `ptrack.toml` for the server + the in-app Settings page for per-device options) instead of constants spread across code. Keep CONFIGURATION.md updated whenever a setting changes or is added.
 - ~~Q12.~~ Answered 2026-10-24: the Debian box will be a **totally fresh install and setup**; start with an empty database. Current data is test data.
 
 ---
@@ -282,6 +282,7 @@ Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on st
 | D-035 | 2026-10-24 | **Multi-user = shared projects (model B).** Projects private by default; owner can add editors. Users = family members only (no public sign-up). Tickets can be assigned to another account (assignee, separate from the assigned date). Configuration redesign (Q11) comes after multi-user. Supersedes "single user" parts of R4/D-014. | User chose B over separate accounts (A) / one shared workspace (C). | Active |
 | D-036 | 2026-10-24 | License: **GPL-3.0-or-later** (LICENSE from gnu.org, sha256 3972dc97…; SPDX in pyproject.toml + package.json). All deps MIT/BSD/Apache-2.0 → compatible. | User: "I need to have a gpl license on the github page". | Active |
 | D-037 | 2026-10-24 | The Monday server deploy = **initial product release (v1.0)**; GitHub repo must be clean: polished README (project page), dev notes in `docs/` (PROJECT_LOG.md stays public, CONFIGURATION.md), root = README, LICENSE, code folders. No history rewrite, no release tag requested (yet). | User request + choices in AskUserQuestion. | Active |
+| D-038 | 2026-10-24 | Configuration in three layers: (1) server settings in `server/ptrack.toml` (`config.py`, stdlib tomllib; sections server/database/accounts/sync; unknown keys = error; env PTRACK_CONFIG/PTRACK_DB/PTRACK_STATIC override; `ptrack-admin show-config`; `ptrack-serve` runs uvicorn from it), (2) per-user preferences synced through the change log as entity `prefs` (id = user id, scope `user:<id>`, only own devices receive them, only owner may write; server validates in `prefs.py`, app holds defaults in `prefs.svelte.ts`): default reminders timed/untimed, untimed hour, week start, soon days, default statuses, default sort, (3) built-in behavior in code (statuses, priorities, roles…). | User: "set the config stuff up however it makes sense, a set of server side configs and some per user configs". | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---

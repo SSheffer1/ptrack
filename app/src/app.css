@@ -762,3 +762,28 @@ button.link {
 .toolbar h2 {
   margin: 0;
 }
+
+.prefs label > span,
+.prefs .field > span {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.prefs .chips {
+  margin: 0.25rem 0 0;
+}
+
+.prefs .chip.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.prefs .chip.status-backlog.on,
+.prefs .chip.status-todo.on,
+.prefs .chip.status-in_progress.on,
+.prefs .chip.status-blocked.on,
+.prefs .chip.status-done.on {
+  color: var(--status-color);
+  border-color: var(--status-color);
+}

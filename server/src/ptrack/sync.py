@@ -10,7 +10,8 @@ of the same ticket never conflict. Losing changes stay in the log as history.
 
 Each change belongs to a project (`Change.project_id`), and devices download
 only the changes of projects their user is a member of: "every change with
-seq > N in my projects".
+seq > N in my projects". A person's preferences (entity "prefs") belong to
+the scope "user:<their id>" instead, so only their own devices get them.
 
 Permissions are checked per change. A change the user isn't allowed to make
 (say, an edit made offline to a project they've since been removed from) is
@@ -35,13 +36,14 @@ from pydantic_core import to_jsonable_python
 from sqlmodel import Session, SQLModel, col, select
 
 from .auth import Actor
-from .models import Change, Comment, Item, ItemType, Member, Project, Role, Status, User
+from . import prefs
+from .models import Change, Comment, Item, ItemType, Member, Project, Role, Status, User, UserPrefs
 from .recurrence import next_due, normalize_rule
 from .reminders import normalize_reminders
 
-ENTITIES: dict[str, type[SQLModel]] = {"project": Project, "item": Item, "comment": Comment}
+ENTITIES: dict[str, type[SQLModel]] = {"project": Project, "item": Item, "comment": Comment, "prefs": UserPrefs}
 # Projects first, so tickets created in the same batch can refer to them; then tickets, then comments.
-ENTITY_ORDER = {"project": 0, "item": 1, "comment": 2}
+ENTITY_ORDER = {"prefs": 0, "project": 0, "item": 1, "comment": 2}
 
 # Fields only the server may set.
 SERVER_FIELDS = {"id", "created_by", "created_at", "updated_at", "number", "next_number", "next_id"}
@@ -67,7 +69,7 @@ class Denied(Exception):
 
 
 class ChangeIn(BaseModel):
-    entity: Literal["project", "item", "comment"]
+    entity: Literal["project", "item", "comment", "prefs"]
     entity_id: str
     field: str
     value: Any
@@ -171,12 +173,15 @@ def apply_changes(
 def _apply_one(session: Session, actor: Actor, device_id: str, change: ChangeIn, batch: _Batch) -> bool:
     """Check, log and apply one change. Returns whether it took effect (it may lose to a newer edit)."""
     model = ENTITIES[change.entity]
-    if change.field in SERVER_FIELDS or change.field not in model.model_fields:
+    if change.entity != "prefs" and (change.field in SERVER_FIELDS or change.field not in model.model_fields):
         raise SyncError(f"{change.entity}.{change.field} is not writable")
     try:
-        value = TypeAdapter(model.model_fields[change.field].annotation).validate_python(change.value)
-        if check := FIELD_CHECKS.get((change.entity, change.field)):
-            value = check(value)
+        if change.entity == "prefs":
+            value = prefs.validate(change.field, change.value)
+        else:
+            value = TypeAdapter(model.model_fields[change.field].annotation).validate_python(change.value)
+            if check := FIELD_CHECKS.get((change.entity, change.field)):
+                value = check(value)
     except (ValidationError, ValueError) as e:
         raise SyncError(f"bad value for {change.entity}.{change.field}: {e}") from e
 
@@ -211,8 +216,13 @@ def _apply_one(session: Session, actor: Actor, device_id: str, change: ChangeIn,
     if row is None:
         row = model(id=change.entity_id, created_at=change.ts)
         session.add(row)
-        batch.created.append((change.entity, row))
-    setattr(row, change.field, value)
+        if change.entity != "prefs":
+            batch.created.append((change.entity, row))
+    if isinstance(row, UserPrefs):
+        # One JSON object of name → value; assign a new dict so the change is saved.
+        row.values = {k: v for k, v in {**row.values, change.field: to_jsonable_python(value)}.items() if v is not None}
+    else:
+        setattr(row, change.field, value)
     row.updated_at = max(row.updated_at, change.ts)  # type: ignore[attr-defined]
     if change.entity == "project" and change.field == "key":
         batch.keys_changed.add(change.entity_id)
@@ -221,6 +231,8 @@ def _apply_one(session: Session, actor: Actor, device_id: str, change: ChangeIn,
 
 def _scope(session: Session, change: ChangeIn, batch: _Batch) -> str:
     """The project a change belongs to ("" if it can't be told)."""
+    if change.entity == "prefs":
+        return prefs.scope(change.entity_id)
     if change.entity == "project":
         return change.entity_id
     if change.entity == "item":
@@ -236,6 +248,10 @@ def _item_project(session: Session, item_id: str, batch: _Batch) -> str:
 
 
 def _check_permission(session: Session, actor: Actor, change: ChangeIn, value: Any, scope: str) -> None:
+    if change.entity == "prefs":
+        if change.entity_id != actor.id:
+            raise Denied("you can only change your own preferences")
+        return
     project = session.get(Project, scope) if scope else None
     role = actor.roles.get(scope)
 

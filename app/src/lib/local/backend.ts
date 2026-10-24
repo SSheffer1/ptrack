@@ -26,6 +26,7 @@ import {
   notifiedUser,
 } from '../types'
 import { toISODate } from '../format'
+import { PREF_DEFAULTS } from '../prefs.svelte'
 import { isValidOffset, normalizeReminders } from '../reminders'
 import type { Entity, LocalStore, Row } from './store'
 import { membersWithNames, type People } from './sync'
@@ -308,6 +309,30 @@ export class LocalBackend implements Backend {
         created_by: (c.created_by as string | null) ?? (this.me() || null),
         created_at: c.created_at,
       }))
+  }
+
+  // --- Preferences ---------------------------------------------------------------
+
+  async getPrefs(): Promise<Record<string, unknown>> {
+    const row = this.store.rows.prefs.get(this.me())
+    if (!row) return {}
+    const { id: _id, created_at: _c, updated_at: _u, ...values } = row
+    return Object.fromEntries(Object.entries(values).filter(([, v]) => v !== null && v !== undefined))
+  }
+
+  async updatePrefs(values: Record<string, unknown>): Promise<Record<string, unknown>> {
+    for (const name of Object.keys(values)) {
+      if (!(name in PREF_DEFAULTS)) throw new ApiError(400, `unknown preference ${name}`)
+    }
+    const cleaned = { ...values }
+    for (const name of ['reminders_timed', 'reminders_untimed']) {
+      if (Array.isArray(cleaned[name])) {
+        checkReminders(cleaned[name] as string[])
+        cleaned[name] = normalizeReminders(cleaned[name] as string[])
+      }
+    }
+    if (this.me() && Object.keys(cleaned).length) this.write('prefs', this.me(), cleaned)
+    return this.getPrefs()
   }
 
   async addComment(ref: string, body: string): Promise<Comment> {

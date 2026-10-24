@@ -74,3 +74,17 @@ def test_admin_manages_accounts(client, bob, anon):
     # Only admins, and admins can't lock themselves out.
     assert bob.get("/admin/users").status_code == 403
     assert client.patch(f"/admin/users/{client.user_id}", json={"disabled": True}).status_code == 400
+
+
+def test_idle_devices_are_signed_out(client, engine, monkeypatch):
+    from sqlmodel import Session, select
+
+    from ptrack import auth
+    from ptrack.models import DeviceToken
+
+    monkeypatch.setattr(auth, "settings", auth.settings.__class__(device_idle_days=30))
+    with Session(engine) as session:
+        for d in session.exec(select(DeviceToken)).all():
+            d.last_used_at -= 31 * auth.DAY_MS
+        session.commit()
+    assert client.get("/me").status_code == 401

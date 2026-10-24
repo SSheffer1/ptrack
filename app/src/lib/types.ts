@@ -173,6 +173,9 @@ export interface Backend {
   listMembers(key: string): Promise<Member[]>
   addMember(key: string, username: string): Promise<Member[]>
   removeMember(key: string, userId: string): Promise<void>
+  // Your preferences (see prefs.svelte.ts): only the ones you've set; null resets one to its default.
+  getPrefs(): Promise<Record<string, unknown>>
+  updatePrefs(values: Record<string, unknown>): Promise<Record<string, unknown>>
 }
 
 /** Who gets a ticket's reminders, and who may change them: the assignee, else the creator. */

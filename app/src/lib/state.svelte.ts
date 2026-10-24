@@ -2,6 +2,7 @@
 // List, Calendar and Agenda. (`.svelte.ts` lets a plain module use $state.)
 
 import { account } from './account'
+import { applyPrefs, type Prefs, prefs } from './prefs.svelte'
 import { api, errorText, type ItemFilters, type Project, type SortOrder, type Status, type User } from './api'
 import { runtime } from './runtime.svelte'
 
@@ -54,6 +55,27 @@ export function userName(id: string | null | undefined): string {
   if (!id) return ''
   if (id === runtime.me?.id) return 'you'
   return users().find((u) => u.id === id)?.display_name ?? 'Someone'
+}
+
+// Your preferences, and the starting filters they imply (applied once per sign-in,
+// so changing filters by hand isn't undone by the next sync).
+let filtersFromPrefs = false
+
+export async function loadPrefs() {
+  try {
+    applyPrefs((await api.getPrefs()) as Partial<Prefs>)
+  } catch {
+    return // offline in online mode; keep what we have
+  }
+  if (!filtersFromPrefs) {
+    filtersFromPrefs = true
+    filters.statuses = [...prefs.default_statuses]
+    filters.sort = prefs.default_sort
+  }
+}
+
+export async function savePrefs(values: Partial<Record<keyof Prefs, unknown>>) {
+  applyPrefs((await api.updatePrefs(values)) as Partial<Prefs>)
 }
 
 export function addProject(p: Project) {

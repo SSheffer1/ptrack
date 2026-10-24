@@ -1,12 +1,7 @@
-"""Command line for managing accounts on the server.
+"""Command line for managing accounts on the server. See server/COMMANDS.md.
 
-    uv run ptrack-admin create-user steven --name "Steven" --admin
-    uv run ptrack-admin set-password steven
-    uv run ptrack-admin rename-user owner steven
-    uv run ptrack-admin list-users
-
-Uses the same database as the server (PTRACK_DB). Passwords are asked for
-interactively, so they don't end up in your shell history.
+Uses the same database as the server (ptrack.toml or PTRACK_DB). Passwords are
+asked for interactively, so they don't end up in your shell history.
 """
 
 import argparse
@@ -14,11 +9,12 @@ import getpass
 import re
 import sys
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from .auth import MIN_PASSWORD, USERNAME_PATTERN, create_user, hash_password
+from .config import describe, settings
 from .db import engine, init_db
-from .models import User
+from .models import DeviceToken, User
 
 
 def _ask_password() -> str:
@@ -51,7 +47,18 @@ def main() -> None:
     rename.add_argument("old")
     rename.add_argument("new")
     commands.add_parser("list-users", help="show all accounts")
+    commands.add_parser("disable-user", help="block sign-in and sign out everywhere").add_argument("username")
+    commands.add_parser("enable-user", help="allow a disabled account again").add_argument("username")
+    admin = commands.add_parser("set-admin", help="let an account manage accounts (or --off to stop)")
+    admin.add_argument("username")
+    admin.add_argument("--off", action="store_true")
+    commands.add_parser("sign-out", help="sign an account out on all its devices").add_argument("username")
+    commands.add_parser("show-config", help="print the server settings in effect (ptrack.toml + defaults)")
     args = parser.parse_args()
+
+    if args.command == "show-config":
+        print(describe(settings), end="")
+        return
 
     init_db()  # make sure the schema is current
     with Session(engine) as session:
@@ -72,6 +79,22 @@ def main() -> None:
                 sys.exit("usernames are lowercase letters, digits, . _ - (2-32 characters, starting with a letter)")
             user.username = args.new
             print(f"renamed {args.old} → {args.new}")
+        elif args.command in ("disable-user", "enable-user"):
+            user = _find(session, args.username)
+            user.disabled = args.command == "disable-user"
+            print(f"{user.username} {'disabled' if user.disabled else 'enabled'}")
+        elif args.command == "set-admin":
+            user = _find(session, args.username)
+            user.is_admin = not args.off
+            print(f"{user.username} is {'now' if user.is_admin else 'no longer'} an admin")
+        elif args.command == "sign-out":
+            user = _find(session, args.username)
+            devices = session.exec(
+                select(DeviceToken).where(DeviceToken.user_id == user.id, col(DeviceToken.revoked).is_(False))
+            ).all()
+            for d in devices:
+                d.revoked = True
+            print(f"signed {user.username} out of {len(devices)} device(s)")
         else:
             for u in session.exec(select(User).order_by(User.username)).all():
                 flags = ", ".join(f for f, on in [("admin", u.is_admin), ("disabled", u.disabled), ("no password", not u.password_hash)] if on)
