@@ -4,7 +4,7 @@
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
 > **Status:** ⏸️ Paused 2026-10-24. Everything committed + pushed (`cd73197`). Milestones 1–5 + 7 (multi-user) + configuration done. Next: **Milestone 6 = v1.0 release** on the Debian box (fresh install) — planned Mon 2026-10-26, user may start it earlier (was cleaning out the box on 2026-10-24). **Read "Resume here" first.** Repo: https://github.com/SSheffer1/ptrack
-> **Last updated:** 2026-10-24
+> **Last updated:** 2026-10-24 (box: Debian trixie, being trimmed)
 
 ---
 
@@ -203,7 +203,7 @@ This deploy **is the initial product release** (D-037): clean repo, polished REA
 Packages for the box (told the user 2026-10-24): server-only Debian install (no desktop; "SSH server" + "standard system utilities"), then `sudo curl ca-certificates git sqlite3 ufw unattended-upgrades`, and Docker Engine + Compose plugin from Docker's official apt repo. No Python/Node/uv on the host — they live in the images.
 
 Ask the user / have ready before starting:
-1. Debian (which version?) installed fresh on the AM4 APU box? Wired to the router? SSH from the laptop working (username, address)? The box will host other services later.
+1. Debian **13 "trixie"** already installed on the AM4 APU box (user trimming packages, 2026-10-24) — check nothing Docker/networking needs was removed (iptables, NIC firmware, network config, ca-certificates, openssh-server). Wired to the router? SSH from the laptop working (username, address)? The box will host other services later.
 2. DHCP reservation for the box in the Deco app (fixed address) — offer to walk through it.
 3. Domain: which DNS provider (Q2g)? Needed for a real HTTPS cert at home via Caddy's DNS-01 challenge (API token, kept out of git).
 4. Home-only for now, or reachable from outside (port 443 forward; approval to open a port; then Q2c CGNAT check and Q2f dynamic IP / DDNS)?
