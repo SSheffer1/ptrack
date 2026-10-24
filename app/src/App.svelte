@@ -1,18 +1,21 @@
 <script lang="ts">
   import Agenda from './Agenda.svelte'
   import CalendarMonth from './CalendarMonth.svelte'
+  import Projects from './Projects.svelte'
   import Settings from './Settings.svelte'
+  import SignIn from './SignIn.svelte'
   import SyncBadge from './SyncBadge.svelte'
   import TicketDetail from './TicketDetail.svelte'
   import TicketList from './TicketList.svelte'
   import { init, runtime } from './lib/runtime.svelte'
-  import { loadProjects } from './lib/state.svelte'
+  import { loadProjects, loadUsers } from './lib/state.svelte'
 
   // Routing via the part of the URL after '#':
   //   #/              → ticket list
   //   #/calendar      → month calendar
   //   #/agenda        → upcoming due dates by day
-  //   #/settings      → sync settings
+  //   #/projects      → projects and who they're shared with
+  //   #/settings      → account, sync, family accounts
   //   #/items/HOME-12 → ticket detail
   // Hash URLs work from any static file server and inside the Android app,
   // with no server-side routing needed.
@@ -21,16 +24,18 @@
   const view = $derived(
     ref
       ? 'detail'
-      : ({ '#/calendar': 'calendar', '#/agenda': 'agenda', '#/settings': 'settings' }[hash] ?? 'list'),
+      : ({ '#/calendar': 'calendar', '#/agenda': 'agenda', '#/projects': 'projects', '#/settings': 'settings' }[hash] ??
+        'list'),
   )
 
   init()
 
-  // Reload projects at start and whenever a sync brings in changes.
+  // Reload projects (and people's names) at start, after signing in, and whenever a sync brings in changes.
   $effect(() => {
-    if (runtime.ready) {
+    if (runtime.ready && runtime.me) {
       void runtime.dataVersion
       loadProjects()
+      loadUsers()
     }
   })
 </script>
@@ -43,6 +48,7 @@
     <a href="#/" class:active={view === 'list'}>List</a>
     <a href="#/calendar" class:active={view === 'calendar'}>Calendar</a>
     <a href="#/agenda" class:active={view === 'agenda'}>Agenda</a>
+    <a href="#/projects" class:active={view === 'projects'}>Projects</a>
   </nav>
   <div class="spacer"></div>
   <a href="#/settings" class="settings-link" class:active={view === 'settings'} aria-label="Settings">
@@ -53,6 +59,8 @@
 <main>
   {#if !runtime.ready}
     <p class="empty">Loading…</p>
+  {:else if !runtime.me}
+    <SignIn />
   {:else if ref}
     {#key ref}
       <TicketDetail {ref} />
@@ -61,6 +69,8 @@
     <CalendarMonth />
   {:else if view === 'agenda'}
     <Agenda />
+  {:else if view === 'projects'}
+    <Projects />
   {:else if view === 'settings'}
     <Settings />
   {:else}

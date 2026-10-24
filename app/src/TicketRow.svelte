@@ -2,6 +2,8 @@
   import { PRIORITY_LABELS, STATUS_LABELS, type Item } from './lib/api'
   import { dueTone, formatDue, formatDueWithTime, formatTime } from './lib/format'
   import { describeRule } from './lib/recurrence'
+  import { runtime } from './lib/runtime.svelte'
+  import { userName } from './lib/state.svelte'
 
   // In the agenda the day is already the heading, so only the time is shown.
   let { item, showDate = true }: { item: Item; showDate?: boolean } = $props()
@@ -14,6 +16,9 @@
     {#each item.labels as label (label)}<span class="label">{label}</span>{/each}
     {#if item.priority !== 'none'}
       <span class="priority priority-{item.priority}">{PRIORITY_LABELS[item.priority]}</span>
+    {/if}
+    {#if item.assignee_id && item.assignee_id !== runtime.me?.id}
+      <span class="assignee" title="Assigned to">→ {userName(item.assignee_id)}</span>
     {/if}
     {#if item.repeat}
       <span class="repeat" title={describeRule(item.repeat)}>↻</span>

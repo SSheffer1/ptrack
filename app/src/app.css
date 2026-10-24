@@ -192,6 +192,8 @@ label > textarea {
 
 .topbar {
   display: flex;
+  flex-wrap: wrap; /* the nav drops below the brand on narrow phones */
+  gap: 0.25rem 0;
   align-items: center;
   padding: 0.6rem 1rem;
   background: var(--surface);
@@ -684,4 +686,79 @@ button.link {
   color: var(--accent);
   font-size: inherit;
   cursor: pointer;
+}
+
+/* --- People and sharing --------------------------------------------------------- */
+
+.chip-gap {
+  width: 0.5rem;
+}
+
+.chip.mine.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.assignee {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.sign-in {
+  max-width: 24rem;
+  margin: 3rem auto;
+}
+
+.people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.people li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.people li .grow {
+  flex: 1;
+}
+
+.role {
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 0.5rem;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.inline-form > label {
+  flex: 1 1 10rem;
+}
+
+.project-row {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-panel {
+  margin: 0 0.75rem 0.75rem;
+}
+
+.toolbar h2 {
+  margin: 0;
 }

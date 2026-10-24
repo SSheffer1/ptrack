@@ -1,6 +1,8 @@
 // Backend that talks to the server's /api endpoints directly. Used by the
-// desktop browser, where the page is served by (or proxied to) the server.
+// desktop browser, where the page is served by (or proxied to) the server,
+// and by the phone for things that need a connection (managing members).
 
+import { authHeaders, connection, serverUrl } from './connection'
 import {
   ApiError,
   type Backend,
@@ -10,6 +12,7 @@ import {
   type ItemCreate,
   type ItemFilters,
   type ItemUpdate,
+  type Member,
   type Project,
 } from './types'
 
@@ -26,12 +29,18 @@ async function errorMessage(res: Response): Promise<string> {
   return `${res.status} ${res.statusText}`
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(serverUrl(path), {
+      method,
+      headers: { ...authHeaders(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, "Can't reach the server")
+  }
+  if (res.status === 401 && connection.token) connection.onSignedOut()
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res))
   return res.status === 204 ? (undefined as T) : res.json()
 }
@@ -52,6 +61,7 @@ export const httpBackend: Backend = {
     if (filters.due_to) params.set('due_to', filters.due_to)
     if (filters.completed_from) params.set('completed_from', filters.completed_from)
     if (filters.completed_to) params.set('completed_to', filters.completed_to)
+    if (filters.assignee) params.set('assignee', filters.assignee)
     if (filters.sort) params.set('sort', filters.sort)
     return request<Item[]>('GET', `/items?${params}`)
   },
@@ -63,5 +73,12 @@ export const httpBackend: Backend = {
 
   listComments: (ref: string) => request<Comment[]>('GET', `/items/${enc(ref)}/comments`),
   addComment: (ref: string, body: string) => request<Comment>('POST', `/items/${enc(ref)}/comments`, { body }),
+
+  updateProject: (key: string, fields: { name?: string }) => request<Project>('PATCH', `/projects/${enc(key)}`, fields),
+  deleteProject: (key: string) => request<void>('DELETE', `/projects/${enc(key)}`),
+  listMembers: (key: string) => request<Member[]>('GET', `/projects/${enc(key)}/members`),
+  addMember: (key: string, username: string) =>
+    request<Member[]>('POST', `/projects/${enc(key)}/members`, { username }),
+  removeMember: (key: string, userId: string) => request<void>('DELETE', `/projects/${enc(key)}/members/${enc(userId)}`),
 }
 

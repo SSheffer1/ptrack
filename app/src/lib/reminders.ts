@@ -3,7 +3,7 @@
 // `reminders: null` means the default; [] means none.
 
 import { formatDueWithTime } from './format'
-import type { Item } from './types'
+import { type Item, notifiedUser } from './types'
 
 export const UNTIMED_HOUR = 9
 const OFFSET_RE = /^(0|-\d{1,4}[mhd])$/
@@ -65,12 +65,13 @@ export interface ScheduledReminder {
   body: string
 }
 
-/** Every reminder still to come for open tickets, soonest first. */
-export function upcomingReminders(items: Item[], now: Date, limit = 50): ScheduledReminder[] {
+/** Every reminder still to come for my open tickets, soonest first. Mine = assigned to me,
+ * or unassigned and created by me (see notifiedUser). */
+export function upcomingReminders(items: Item[], now: Date, me: string, limit = 50): ScheduledReminder[] {
   const result: ScheduledReminder[] = []
   for (const item of items) {
     const due = dueMoment(item)
-    if (!due || item.status === 'done') continue
+    if (!due || item.status === 'done' || notifiedUser(item, me) !== me) continue
     for (const offset of effectiveReminders(item)) {
       const at = new Date(due.getTime() + offsetMinutes(offset) * 60_000)
       if (at <= now) continue

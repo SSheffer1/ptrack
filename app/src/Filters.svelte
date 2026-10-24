@@ -31,4 +31,8 @@
       {STATUS_LABELS[s]}
     </button>
   {/each}
+  <span class="chip-gap"></span>
+  <button class="chip mine" class:on={filters.mine} onclick={() => (filters.mine = !filters.mine)}>
+    Assigned to me
+  </button>
 </section>

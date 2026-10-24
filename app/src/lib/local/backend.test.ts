@@ -3,17 +3,30 @@ import { toISODate } from '../format'
 import { ApiError } from '../types'
 import { LocalBackend } from './backend'
 import { LocalStore } from './store'
+import type { People } from './sync'
 
 let store: LocalStore
 let api: LocalBackend
 let writes: number
+let people: People
+
+const ALICE = { id: 'alice', username: 'alice', display_name: 'Alice', is_admin: false }
+const BOB = { id: 'bob', username: 'bob', display_name: 'Bob', is_admin: false }
 
 beforeEach(async () => {
   store = new LocalStore()
   writes = 0
-  api = new LocalBackend(store, () => 'phone', () => writes++)
+  people = { me: ALICE, users: [ALICE, BOB], members: [] }
+  api = new LocalBackend(store, () => 'phone', () => writes++, () => people)
   await api.createProject('HOME', 'Home')
 })
+
+/** Pretend the server synced HOME, with these members. */
+function syncedMembers(roles: Record<string, 'owner' | 'editor'>) {
+  const home = [...store.rows.project.values()][0]
+  store.apply({ entity: 'project', entity_id: home.id, field: 'created_by', value: 'alice', ts: Date.now() + 1, device_id: 'server', seq: 99 })
+  people.members = Object.entries(roles).map(([user_id, role]) => ({ project_id: home.id, user_id, role }))
+}
 
 const today = toISODate(new Date())
 
@@ -72,6 +85,43 @@ describe('LocalBackend', () => {
     expect((await api.listComments(id)).map((c) => c.body)).toEqual(['note'])
     await api.deleteItem(id)
     await expect(api.getItem(id)).rejects.toMatchObject({ status: 404 })
+    expect(await api.listItems()).toEqual([])
+  })
+
+  it('a project made here is mine until the server says otherwise', async () => {
+    expect((await api.listProjects()).map((p) => p.role)).toEqual(['owner'])
+    expect((await api.listMembers('HOME')).map((m) => m.username)).toEqual(['alice'])
+    syncedMembers({ alice: 'editor', bob: 'owner' })
+    expect((await api.listProjects()).map((p) => p.role)).toEqual(['editor'])
+    expect((await api.listMembers('HOME')).map((m) => [m.display_name, m.role])).toEqual([
+      ['Alice', 'editor'],
+      ['Bob', 'owner'],
+    ])
+  })
+
+  it('editors can edit but not delete tickets or rename the project', async () => {
+    const { id } = await api.createItem({ project: 'HOME', title: 'x' })
+    syncedMembers({ alice: 'editor', bob: 'owner' })
+    await expect(api.updateItem(id, { status: 'done' })).resolves.toMatchObject({ status: 'done' })
+    await expect(api.deleteItem(id)).rejects.toMatchObject({ status: 403 })
+    await expect(api.updateProject('HOME', { name: 'Mine now' })).rejects.toMatchObject({ status: 403 })
+    await expect(api.deleteProject('HOME')).rejects.toMatchObject({ status: 403 })
+  })
+
+  it('assignees must be members, and only they set reminders', async () => {
+    const { id } = await api.createItem({ project: 'HOME', title: 'Mow lawn', due: '2026-11-01' })
+    await expect(api.updateItem(id, { assignee_id: 'bob' })).rejects.toMatchObject({ status: 403 })
+    syncedMembers({ alice: 'owner', bob: 'editor' })
+    await api.updateItem(id, { assignee_id: 'bob' })
+    await expect(api.updateItem(id, { reminders: [] })).rejects.toMatchObject({ status: 403 })
+    expect((await api.listItems({ assignee: 'me' })).length).toBe(0)
+    await api.updateItem(id, { assignee_id: null })
+    expect((await api.listItems({ assignee: 'me' })).map((i) => i.title)).toEqual(['Mow lawn'])
+  })
+
+  it('hides projects I\u2019m not a member of', async () => {
+    syncedMembers({ bob: 'owner' })
+    expect(await api.listProjects()).toEqual([])
     expect(await api.listItems()).toEqual([])
   })
 })

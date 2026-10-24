@@ -15,6 +15,7 @@ export interface LogEntry {
   value: unknown
   ts: number // ms since epoch
   device_id: string
+  user_id?: string // who made it (from the server; unset for this device's unsent edits)
   seq?: number // set once the server has the entry (its position in the server's log)
 }
 
@@ -69,7 +70,19 @@ export class LocalStore {
   }
 
   discardPending(deviceId: string) {
-    this.load(this.log.filter((e) => !(e.device_id === deviceId && e.seq === undefined)))
+    this.load(this.log.filter((e) => !isPending(e, deviceId)))
+  }
+
+  /** Forget everything downloaded, keeping this device's unsent edits (the server sends it all again). */
+  keepOnlyPending(deviceId: string) {
+    this.load(this.log.filter((e) => isPending(e, deviceId)))
+  }
+
+  /** Remove unsent edits the server refused. */
+  removePending(deviceId: string, refused: { entity_id: string; field: string; ts: number }[]) {
+    const key = (e: { entity_id: string; field: string; ts: number }) => [e.entity_id, e.field, e.ts].join(SEP)
+    const gone = new Set(refused.map(key))
+    this.load(this.log.filter((e) => !(isPending(e, deviceId) && gone.has(key(e)))))
   }
 
   /** Add an entry (from this device or the server). Returns false if it was already known. */
@@ -123,6 +136,10 @@ export class LocalStore {
   entries(): LogEntry[] {
     return this.log
   }
+}
+
+function isPending(e: LogEntry, deviceId: string): boolean {
+  return e.device_id === deviceId && e.seq === undefined
 }
 
 /** Does `a` beat `b`? Later timestamp wins; the device id breaks exact ties (as on the server). */

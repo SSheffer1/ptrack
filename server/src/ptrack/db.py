@@ -3,9 +3,11 @@
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Annotated
 
 from alembic import command
 from alembic.config import Config
+from fastapi import Depends
 from sqlmodel import Session, create_engine
 
 DATABASE_URL = os.environ.get("PTRACK_DB", "sqlite:///ptrack.db")
@@ -32,3 +34,6 @@ def init_db() -> None:
 def get_session() -> Iterator[Session]:
     with Session(engine) as session:
         yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]

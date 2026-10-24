@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** 🟢 Milestone 5 (reminders) done + pushed. Next: Milestone 6 (Debian deploy) planned for Monday night 2026-10-26 — see "Monday checklist". Repo: https://github.com/SSheffer1/ptrack
+> **Status:** 🟢 **Milestone 7 (multi-user) done + pushed** (with README rewrite + docs/ move). Next: configuration (per-user settings + server config file, Q11). Milestone 6 = v1.0 release, Debian fresh install, Mon 2026-10-26. Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -178,7 +178,20 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 - Q2g. Who is the domain's DNS provider? (Affects DDNS + whether Caddy can use DNS challenge.)
 - Q9. Better name than "ptrack"? (Codename is fine until then.)
 - Q11. **User wants a single config file** for the choices listed in `CONFIGURATION.md` (e.g. `ptrack.toml` for the server + the in-app Settings page for per-device options) instead of constants spread across code. Keep CONFIGURATION.md updated whenever a setting changes or is added.
-- Q12. Data created so far (incl. reminder-test tickets) is test data, not expected to carry over. Decide at Milestone 6: start the Debian server with a fresh DB, or copy this one.
+- ~~Q12.~~ Answered 2026-10-24: the Debian box will be a **totally fresh install and setup**; start with an empty database. Current data is test data.
+
+---
+
+## Multi-user design draft (D-035, not built yet)
+
+- **Users:** `user` table (id, username, display name, password hash via stdlib `hashlib.scrypt` — no new dependency, is_admin). Accounts created by the admin only (no sign-up). Existing `owner_id = "owner"` data migrates to the admin's account.
+- **Login:** each device signs in once and gets its own long-lived token (random; server stores only its hash; revocable per device). Sent as `Authorization: Bearer …` by browser and phone.
+- **Membership:** `member` (project_id, user_id, role `owner` | `editor`). Access to items/comments follows their project. Members are synced so the phone can show names offline.
+- **Assignee:** `item.assignee_id` (nullable; must be a member of the ticket's project). Filter "assigned to me".
+- **Sync:** each change carries its project; a device only receives changes for projects its user is a member of, and the server checks membership on upload. Membership change → server bumps that user's *epoch*; devices that see a new epoch drop their confirmed data, keep unsent edits, and re-download from cursor 0 (simple and always correct at family scale).
+- **Ticket numbers:** unchanged, per project, server-assigned.
+- **Permissions (user, 2026-10-24):** anyone can create projects and share them (creator = owner). Editors: create, edit, comment on tickets. Owner only: rename/delete project, manage members, and (assumed — editors weren't given it) delete tickets.
+- **Notifications (user):** "the assignee decides everything about notifications" → reminders on a ticket are the assignee's (only they're notified, only they can change that ticket's reminders); unassigned → the creator (assumed). Reminder defaults must be end-user configurable (per-user settings, part of the config phase).
 
 ---
 
@@ -221,8 +234,8 @@ Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on st
 
 - K1. Clock skew: LWW trusts device timestamps. A phone with a clock far in the future would win every conflict and push the server clock forward (`sync._observe`). Mitigation idea: reject/clamp ts too far ahead of server time.
 - K2. Server clock (`sync._clock`) is in-memory; fine for one process, resets on restart (wall clock covers it).
-- K3. Two devices creating the same project key offline → two projects with one key. REST blocks it; sync doesn't yet.
-- K4. No auth — `OWNER_ID = "owner"` hardcoded in `api.py`. Must land before exposing to the internet (Milestone 6).
+- ~~K3.~~ Resolved: keys unique server-wide; offline clashes renamed (GYM → GYM2).
+- ~~K4. No auth.~~ Resolved 2026-10-24 (M7 step 1): accounts + per-device tokens. Still to consider before internet exposure: login rate limiting beyond the 1 s delay, HTTPS.
 - K5. No migrations — `create_all` only. Add Alembic before there's data worth keeping. **Resolved 2026-10-23:** Alembic set up (D-030).
 - K6. Moving a ticket between projects isn't supported (would need renumbering).
 - ~~K7. Personal email in author fields.~~ Fixed: repo-local git identity and `server/pyproject.toml` use `SSheffer1 <235915830+SSheffer1@users.noreply.github.com>` (GitHub private address, since repo is public). Global git config untouched.
@@ -264,6 +277,11 @@ Plan: Docker + Compose on Debian; ptrack server image (uv, runs migrations on st
 | D-030 | 2026-10-23 | Schema migrations with Alembic, inside the package (`src/ptrack/migrations`), `render_as_batch` for SQLite; server runs `upgrade head` on startup; `test_migrations` asserts migrations == models. Autogenerate against a scratch DB via `PTRACK_DB`. | Real data in dev DB now; no more hand ALTERs. | Active |
 | D-031 | 2026-10-23 | Calendar shows finished tickets on their `completed_on` day (fallback: due), struck through, after that day's open items, regardless of the Done status chip; chips filter open tickets only. API: `completed_from`/`completed_to`. | User: closed tickets disappeared from the calendar; wanted them on the day done with strikethrough. | Active |
 | D-032 | 2026-10-23 | Phone storage = change log replayed in TypeScript (`app/src/lib/local/`: store.ts LWW log + rows, backend.ts mirrors REST semantics, sync.ts engine, persist.ts one JSON file via Capacitor Filesystem, tmp+rename). Supersedes SQLite part of D-012. `runtime.svelte.ts` picks backend: native → local, browser → http unless the Settings "offline-first mode" test switch is on. Views re-fetch on `runtime.dataVersion`. Device ids `android-<uuid>` / `browser-<uuid>`. Sync: start, every 30 s, 1 s after edits, on app resume. Server 400 → sync paused until user discards pending. CapacitorHttp handles fetch on Android (no CORS/mixed content). | User: "do it, sounds simpler even". | Active |
+| D-033 | 2026-10-24 | Kanban board shelved (not in v1). | User: "idk if i love the feature". Revisit later. | Active |
+| D-034 | 2026-10-24 | Quick-add shelved (not in v1). Proposal kept for later: one box, markers `@project #label !priority due:… 10am every:…`, live parse preview, `/` to focus. | User: shelve it; wants to think about multi-user + configuration instead. | Active |
+| D-035 | 2026-10-24 | **Multi-user = shared projects (model B).** Projects private by default; owner can add editors. Users = family members only (no public sign-up). Tickets can be assigned to another account (assignee, separate from the assigned date). Configuration redesign (Q11) comes after multi-user. Supersedes "single user" parts of R4/D-014. | User chose B over separate accounts (A) / one shared workspace (C). | Active |
+| D-036 | 2026-10-24 | License: **GPL-3.0-or-later** (LICENSE from gnu.org, sha256 3972dc97…; SPDX in pyproject.toml + package.json). All deps MIT/BSD/Apache-2.0 → compatible. | User: "I need to have a gpl license on the github page". | Active |
+| D-037 | 2026-10-24 | The Monday server deploy = **initial product release (v1.0)**; GitHub repo must be clean: polished README (project page), dev notes in `docs/` (PROJECT_LOG.md stays public, CONFIGURATION.md), root = README, LICENSE, code folders. No history rewrite, no release tag requested (yet). | User request + choices in AskUserQuestion. | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---
