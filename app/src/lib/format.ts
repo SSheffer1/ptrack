@@ -1,4 +1,5 @@
-import type { Status } from './api'
+import { prefs } from './prefs.svelte'
+import type { Status } from './types'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -34,7 +35,7 @@ export function dueTone(d: string, status: Status): 'overdue' | 'soon' | '' {
   if (status === 'done') return ''
   const days = daysFromToday(d)
   if (days < 0) return 'overdue'
-  if (days <= 2) return 'soon'
+  if (days <= prefs.soon_days) return 'soon'
   return ''
 }
 

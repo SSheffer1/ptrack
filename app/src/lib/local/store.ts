@@ -6,7 +6,7 @@
 // order entries arrive in. That lets the phone apply its own edits right away
 // and the server's later, and still end up exactly where the server is.
 
-export type Entity = 'project' | 'item' | 'comment'
+export type Entity = 'project' | 'item' | 'comment' | 'prefs'
 
 export interface LogEntry {
   entity: Entity
@@ -43,12 +43,18 @@ const DEFAULTS: Record<Entity, Record<string, unknown>> = {
     deleted: false,
   },
   comment: { item_id: '', body: '', deleted: false },
+  prefs: {}, // one row per person, id = user id; each preference is a field
 }
 
 const SEP = '\u0000'
 
 export class LocalStore {
-  readonly rows: Record<Entity, Map<string, Row>> = { project: new Map(), item: new Map(), comment: new Map() }
+  readonly rows: Record<Entity, Map<string, Row>> = {
+    project: new Map(),
+    item: new Map(),
+    comment: new Map(),
+    prefs: new Map(),
+  }
   private log: LogEntry[] = []
   private byEntity = new Map<string, LogEntry[]>() // entity_id → its entries, for history
   private seen = new Map<string, LogEntry>() // identity → entry, to skip duplicates

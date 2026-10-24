@@ -7,7 +7,9 @@ uv run fastapi dev src/ptrack/main.py   # dev server with auto-reload on :8000
 uv run pytest                           # tests
 ```
 
-API docs (interactive): http://localhost:8000/docs. Database file: `ptrack.db` (override with `PTRACK_DB`).
+API docs (interactive): http://localhost:8000/docs. Settings: `ptrack.toml` (see `ptrack.example.toml`).
+
+**Every command (accounts, running, database, tests): [COMMANDS.md](COMMANDS.md).**
 
 ## Changing the database schema
 

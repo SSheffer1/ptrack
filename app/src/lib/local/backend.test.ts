@@ -124,4 +124,16 @@ describe('LocalBackend', () => {
     expect(await api.listProjects()).toEqual([])
     expect(await api.listItems()).toEqual([])
   })
+
+  it('keeps my preferences as a synced record', async () => {
+    expect(await api.getPrefs()).toEqual({})
+    expect(await api.updatePrefs({ week_start: 'monday', reminders_timed: ['-8H', '-1d'] })).toEqual({
+      week_start: 'monday',
+      reminders_timed: ['-1d', '-8h'],
+    })
+    expect(store.pending('phone').filter((e) => e.entity === 'prefs').map((e) => e.entity_id)).toEqual(['alice', 'alice'])
+    expect(await api.updatePrefs({ week_start: null })).toEqual({ reminders_timed: ['-1d', '-8h'] })
+    await expect(api.updatePrefs({ colour: 'blue' })).rejects.toMatchObject({ status: 400 })
+  })
 })
+

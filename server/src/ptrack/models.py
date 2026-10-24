@@ -133,6 +133,15 @@ class Comment(SQLModel, table=True):
     deleted: bool = False
 
 
+class UserPrefs(SQLModel, table=True):
+    """One person's preferences (see prefs.py). `id` is the user's id."""
+
+    id: str = Field(primary_key=True)
+    values: dict = Field(default_factory=dict, sa_column=Column(JSON))  # name → value; missing = default
+    created_at: int = 0
+    updated_at: int = 0
+
+
 class Change(SQLModel, table=True):
     """One field edit: "set `field` of `entity_id` to `value` at `ts`, from `device_id`".
 
@@ -147,7 +156,7 @@ class Change(SQLModel, table=True):
     )
 
     seq: int | None = Field(default=None, primary_key=True)  # server order; sync cursor
-    project_id: str = Field(default="", index=True)  # whose members may see this change
+    project_id: str = Field(default="", index=True)  # whose members may see this change ("user:<id>" for prefs)
     user_id: str = ""  # who made it
     entity: str  # "project" | "item" | "comment"
     entity_id: str

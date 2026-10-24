@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { applyPrefs } from './prefs.svelte'
 import { describeOffset, dueMoment, normalizeReminders, upcomingReminders } from './reminders'
 import type { Item } from './types'
 
@@ -70,5 +71,24 @@ describe('reminders', () => {
     expect(remind([item({ ...due, assignee_id: 'bob' })], NOW)).toEqual([])
     expect(remind([item({ ...due, created_by: 'bob', assignee_id: 'me' })], NOW)).toHaveLength(1)
     expect(remind([item({ ...due, created_by: 'bob' })], NOW)).toEqual([]) // bob's, unassigned
+  })
+
+  describe('with your preferences', () => {
+    afterEach(() => applyPrefs({}))
+
+    it('uses your untimed hour and default reminders', () => {
+      applyPrefs({ untimed_hour: 7, reminders_untimed: ['-1d'], reminders_timed: ['-1h'] })
+      expect(remind([item({ due: '2026-10-28' })], NOW).map((r) => r.at)).toEqual([new Date(2026, 9, 27, 7, 0)])
+      expect(remind([item({ due: '2026-10-28', due_time: '10:00:00' })], NOW).map((r) => r.at)).toEqual([
+        new Date(2026, 9, 28, 9, 0),
+      ])
+      expect(describeOffset('0', false)).toBe('7 AM on the day')
+    })
+
+    it("a ticket's own reminders still win", () => {
+      applyPrefs({ reminders_untimed: [] })
+      expect(remind([item({ due: '2026-10-28' })], NOW)).toEqual([])
+      expect(remind([item({ due: '2026-10-28', reminders: ['0'] })], NOW)).toHaveLength(1)
+    })
   })
 })

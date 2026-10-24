@@ -1,6 +1,5 @@
-"""Database connection and migrations. Set PTRACK_DB to change where the SQLite file lives."""
+"""Database connection and migrations. The database is set in ptrack.toml ([database] url) or PTRACK_DB."""
 
-import os
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Annotated
@@ -10,7 +9,9 @@ from alembic.config import Config
 from fastapi import Depends
 from sqlmodel import Session, create_engine
 
-DATABASE_URL = os.environ.get("PTRACK_DB", "sqlite:///ptrack.db")
+from .config import settings
+
+DATABASE_URL = settings.database_url
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 

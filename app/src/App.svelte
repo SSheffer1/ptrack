@@ -8,7 +8,7 @@
   import TicketDetail from './TicketDetail.svelte'
   import TicketList from './TicketList.svelte'
   import { init, runtime } from './lib/runtime.svelte'
-  import { loadProjects, loadUsers } from './lib/state.svelte'
+  import { loadPrefs, loadProjects, loadUsers } from './lib/state.svelte'
 
   // Routing via the part of the URL after '#':
   //   #/              → ticket list
@@ -36,6 +36,7 @@
       void runtime.dataVersion
       loadProjects()
       loadUsers()
+      loadPrefs()
     }
   })
 </script>

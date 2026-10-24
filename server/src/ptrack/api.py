@@ -19,8 +19,10 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, col, select
 
 from .auth import Actor, ActorDep, UserRead, load_roles, user_read
+from .config import settings
 from .db import SessionDep
-from .models import Change, Comment, Item, ItemType, Member, Priority, Project, Role, Status, User
+from .models import Change, Comment, Item, ItemType, Member, Priority, Project, Role, Status, User, UserPrefs
+from .prefs import scope as prefs_scope
 from .sync import (
     RESERVED_DEVICES,
     WEB_DEVICE,
@@ -36,7 +38,7 @@ from .sync import (
     unassign_member,
 )
 
-SYNC_PAGE_SIZE = 1000
+SYNC_PAGE_SIZE = settings.sync_page_size
 KEY_RE = re.compile(r"^([A-Z][A-Z0-9]{0,9})-(\d+)$")
 PROJECT_KEY_PATTERN = r"^[A-Z][A-Z0-9]{0,9}$"
 
@@ -407,6 +409,24 @@ def add_comment(ref: str, body: CommentCreate, actor: ActorDep, session: Session
     return comment
 
 
+# --- Preferences -----------------------------------------------------------------
+
+
+@router.get("/me/prefs")
+def get_prefs(actor: ActorDep, session: SessionDep) -> dict[str, Any]:
+    """Only the preferences you've set; the app fills in defaults for the rest."""
+    row = session.get(UserPrefs, actor.id)
+    return row.values if row else {}
+
+
+@router.patch("/me/prefs")
+def update_prefs(body: dict[str, Any], actor: ActorDep, session: SessionDep) -> dict[str, Any]:
+    """Set preferences; a value of null goes back to the default."""
+    if body:
+        _write(session, actor, "prefs", actor.id, body)
+    return get_prefs(actor, session)
+
+
 # --- People -------------------------------------------------------------------
 
 
@@ -468,7 +488,7 @@ def sync(body: SyncRequest, actor: ActorDep, session: SessionDep) -> SyncRespons
     session.refresh(actor.user)
     reset = body.epoch != actor.user.epoch
     since = 0 if reset else body.since
-    changes = changes_since(session, list(actor.roles), since, SYNC_PAGE_SIZE)
+    changes = changes_since(session, [*actor.roles, prefs_scope(actor.id)], since, SYNC_PAGE_SIZE)
     memberships = session.exec(select(Member).where(col(Member.project_id).in_(list(actor.roles)))).all()
     return SyncResponse(
         changes=changes,

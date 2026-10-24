@@ -1,17 +1,19 @@
 // Reminder offsets (see server/src/ptrack/reminders.py): "0", "-30m", "-8h", "-2d",
-// counted from the due moment = due date at its due time, or 9:00 without one.
-// `reminders: null` means the default; [] means none.
+// counted from the due moment = due date at its due time, or at your
+// "untimed hour" (9:00 unless changed) without one.
+// `reminders: null` means your default reminders; [] means none.
 
-import { formatDueWithTime } from './format'
+import { formatDueWithTime, formatTime } from './format'
+import { prefs } from './prefs.svelte'
 import { type Item, notifiedUser } from './types'
-
-export const UNTIMED_HOUR = 9
 const OFFSET_RE = /^(0|-\d{1,4}[mhd])$/
 const UNIT_MINUTES = { m: 1, h: 60, d: 1440 } as const
 
 export function defaultReminders(timed: boolean): string[] {
-  return timed ? ['-8h'] : ['0']
+  return timed ? prefs.reminders_timed : prefs.reminders_untimed
 }
+
+const untimedTime = () => `${String(prefs.untimed_hour).padStart(2, '0')}:00`
 
 /** The reminders that actually apply to an item (its own, or the default). */
 export function effectiveReminders(item: Pick<Item, 'reminders' | 'due_time'>): string[] {
@@ -36,17 +38,18 @@ export function normalizeReminders(list: string[] | null | undefined): string[] 
 export function dueMoment(item: Pick<Item, 'due' | 'due_time'>): Date | null {
   if (!item.due) return null
   const [y, m, d] = item.due.split('-').map(Number)
-  const [hh, mm] = (item.due_time ?? `${UNTIMED_HOUR}:00`).split(':').map(Number)
+  const [hh, mm] = (item.due_time ?? untimedTime()).split(':').map(Number)
   return new Date(y, m - 1, d, hh, mm)
 }
 
 /** "8 hours before", "1 day before", "At due time" (or "9 AM on the day" for untimed tickets). */
 export function describeOffset(offset: string, timed: boolean): string {
   const minutes = -offsetMinutes(offset)
-  if (minutes === 0) return timed ? 'At due time' : `${UNTIMED_HOUR} AM on the day`
+  const at = formatTime(untimedTime()).replace(':00', '')
+  if (minutes === 0) return timed ? 'At due time' : `${at} on the day`
   if (!timed && minutes % 1440 === 0) {
     const days = minutes / 1440
-    return days === 1 ? `${UNTIMED_HOUR} AM the day before` : `${UNTIMED_HOUR} AM, ${days} days before`
+    return days === 1 ? `${at} the day before` : `${at}, ${days} days before`
   }
   const [n, unit] = minutes % 1440 === 0 ? [minutes / 1440, 'day'] : minutes % 60 === 0 ? [minutes / 60, 'hour'] : [minutes, 'minute']
   return `${n} ${unit}${n === 1 ? '' : 's'} before`

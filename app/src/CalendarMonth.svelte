@@ -3,10 +3,14 @@
   import NewTicket from './NewTicket.svelte'
   import { api, errorText, STATUSES, type Item } from './lib/api'
   import { addDays, dueTone, formatTime, toISODate } from './lib/format'
+  import { prefs } from './lib/prefs.svelte'
   import { commonFilters, filters, projects } from './lib/state.svelte'
   import { runtime } from './lib/runtime.svelte'
 
-  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  // 0 = weeks start on Sunday, 1 = Monday (your preference).
+  const weekStart = $derived(prefs.week_start === 'monday' ? 1 : 0)
+  const weekdays = $derived([...DAY_NAMES.slice(weekStart), ...DAY_NAMES.slice(0, weekStart)])
   const todayISO = toISODate(new Date())
 
   const now = new Date()
@@ -15,11 +19,11 @@
   let error = $state('')
   let addingOn = $state<string | null>(null) // date of the day clicked to add a ticket
 
-  // The grid runs from the Sunday on or before the 1st to the Saturday on or after the last day.
+  // The grid runs from the first day of the week on or before the 1st to the last day of the week on or after the month's end.
   const days = $derived.by(() => {
-    const first = addDays(month, -month.getDay())
+    const first = addDays(month, -((month.getDay() - weekStart + 7) % 7))
     const last = new Date(month.getFullYear(), month.getMonth() + 1, 0)
-    const end = addDays(last, 6 - last.getDay())
+    const end = addDays(last, 6 - ((last.getDay() - weekStart + 7) % 7))
     const result: { date: Date; iso: string; inMonth: boolean }[] = []
     for (let d = first; d <= end; d = addDays(d, 1)) {
       result.push({ date: d, iso: toISODate(d), inMonth: d.getMonth() === month.getMonth() })
@@ -99,7 +103,7 @@
 {#if error}<p class="error">{error}</p>{/if}
 
 <div class="month">
-  {#each WEEKDAYS as w (w)}<div class="weekday">{w}</div>{/each}
+  {#each weekdays as w (w)}<div class="weekday">{w}</div>{/each}
   {#each days as day (day.iso)}
     <div class="day" class:other-month={!day.inMonth} class:today={day.iso === todayISO}>
       <button

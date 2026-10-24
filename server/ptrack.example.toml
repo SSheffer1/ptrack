@@ -1,0 +1,19 @@
+# ptrack server settings. Copy to ptrack.toml (next to where the server runs)
+# and change what you need; anything left out uses the default shown here.
+# Check what's in effect with:  uv run ptrack-admin show-config
+
+[server]
+host = "127.0.0.1"          # "0.0.0.0" to accept connections from phones on the network
+port = 8000
+# static_dir = "../app/dist"  # the built web app served at /  (default: app/dist in this checkout)
+
+[database]
+url = "sqlite:///ptrack.db"  # a file next to the server; sqlite:////absolute/path.db also works
+
+[accounts]
+min_password_length = 8
+login_delay_seconds = 1      # pause after a wrong password, to slow down guessing
+device_idle_days = 0         # sign out devices unused for this many days; 0 = never
+
+[sync]
+page_size = 1000             # changes sent per sync response

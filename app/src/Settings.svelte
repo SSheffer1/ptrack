@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Preferences from './Preferences.svelte'
   import { account, type AdminUser, type Device } from './lib/account'
   import { errorText } from './lib/api'
   import { ago, exactTime } from './lib/format'
@@ -109,6 +110,9 @@
     <button class="danger" onclick={confirmSignOut}>Sign out on this device</button>
   </div>
 </div>
+
+<h3>Preferences</h3>
+<Preferences />
 
 {#if runtime.local}
   <h3>Sync</h3>
