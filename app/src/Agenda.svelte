@@ -3,6 +3,7 @@
   import TicketRow from './TicketRow.svelte'
   import { api, errorText, type Item } from './lib/api'
   import { formatDue, parseDate, toISODate } from './lib/format'
+  import { runtime } from './lib/runtime.svelte'
   import { filters } from './lib/state.svelte'
 
   // Upcoming due dates grouped by day, with anything overdue on top.
@@ -13,6 +14,7 @@
 
   let latestRequest = 0
   $effect(() => {
+    void runtime.dataVersion // also refresh after a sync
     const request = ++latestRequest
     api.listItems({ project: filters.project, status: [...filters.statuses], q: filters.q }).then(
       (result) => {

@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > ("ptrack" is a working codename — user isn't attached to it. See Q9.)
 >
-> **Status:** ⏸️ Paused mid-Milestone 3 (Android APK). User installing Java. **See "Resume here: Milestone 3" below.** Repo: https://github.com/SSheffer1/ptrack
+> **Status:** 🟢 Milestone 3 (Android APK) done + pushed: offline-first app on the user's Pixel 8a, syncing over home Wi-Fi (see K11 network caveat). Next: choose next milestone. Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-23
 
 ---
@@ -249,6 +249,7 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 | D-029 | 2026-10-23 | Assigned/completed dates. `assigned_on` (user-settable; null → created date; API returns effective `assigned`). `completed_on` (date): server sets it from the *change's* ts when status → done (so offline completions get the right day), clears on reopen, unless the same batch set `completed_on` explicitly; user can edit it. List `sort` = created / due / completed. Server-set completed_on hidden from UI history. | User: "created date is fine for assigned... optionally whenever I say... same for completion". | Active |
 | D-030 | 2026-10-23 | Schema migrations with Alembic, inside the package (`src/ptrack/migrations`), `render_as_batch` for SQLite; server runs `upgrade head` on startup; `test_migrations` asserts migrations == models. Autogenerate against a scratch DB via `PTRACK_DB`. | Real data in dev DB now; no more hand ALTERs. | Active |
 | D-031 | 2026-10-23 | Calendar shows finished tickets on their `completed_on` day (fallback: due), struck through, after that day's open items, regardless of the Done status chip; chips filter open tickets only. API: `completed_from`/`completed_to`. | User: closed tickets disappeared from the calendar; wanted them on the day done with strikethrough. | Active |
+| D-032 | 2026-10-23 | Phone storage = change log replayed in TypeScript (`app/src/lib/local/`: store.ts LWW log + rows, backend.ts mirrors REST semantics, sync.ts engine, persist.ts one JSON file via Capacitor Filesystem, tmp+rename). Supersedes SQLite part of D-012. `runtime.svelte.ts` picks backend: native → local, browser → http unless the Settings "offline-first mode" test switch is on. Views re-fetch on `runtime.dataVersion`. Device ids `android-<uuid>` / `browser-<uuid>`. Sync: start, every 30 s, 1 s after edits, on app resume. Server 400 → sync paused until user discards pending. CapacitorHttp handles fetch on Android (no CORS/mixed content). | User: "do it, sounds simpler even". | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---
@@ -276,5 +277,5 @@ Note: human-readable keys (`HOME-12`) are tricky offline (two devices could both
 4. ~~Milestone 1: data model + change log + CRUD/sync API on server, with tests.~~ Done 2026-10-21.
 5. ~~Milestone 2: Svelte UI (ticket list + detail) running in desktop browser against server.~~ Done 2026-10-23.
 6. ~~Milestone 4 (moved up, D-027): due times + calendar view (month + agenda) + recurring tickets.~~ Done 2026-10-23 (+ assigned/completed dates, migrations).
-7. Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.
+7. ~~Milestone 3: Capacitor APK with local SQLite + sync; test offline edits on phone.~~ Done 2026-10-24 (change-log store instead of SQLite, D-032).
 8. Milestone 5: reminders. Milestone 6: deploy on Debian (Docker Compose + Caddy) + backups + login.
