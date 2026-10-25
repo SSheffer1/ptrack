@@ -311,16 +311,19 @@
       {/if}
     </div>
 
-    {#if item.due}
-      <div class="field">
-        {#if remindsMe}
-          <span>Remind me <span class="hint">(on the phone)</span></span>
-          <ReminderPicker value={item.reminders} timed={!!item.due_time} onchange={(reminders) => save({ reminders })} />
-        {:else}
-          <span class="hint">Reminders for this ticket go to {userName(notifiedUser(item, me))}, who sets them.</span>
-        {/if}
-      </div>
-    {/if}
+    <div class="field">
+      {#if remindsMe}
+        <span>Remind me <span class="hint">(on the phone)</span></span>
+        <ReminderPicker
+          value={item.reminders}
+          hasDue={!!item.due}
+          timed={!!item.due_time}
+          onchange={(reminders) => save({ reminders })}
+        />
+      {:else}
+        <span class="hint">Reminders for this ticket go to {userName(notifiedUser(item, me))}, who sets them.</span>
+      {/if}
+    </div>
 
     {#if item.next_id}
       <p class="notice">

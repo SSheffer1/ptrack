@@ -27,7 +27,7 @@ import {
 } from '../types'
 import { toISODate } from '../format'
 import { PREF_DEFAULTS } from '../prefs.svelte'
-import { isValidOffset, normalizeReminders } from '../reminders'
+import { isSpecificTime, isValidReminder, normalizeReminders } from '../reminders'
 import type { Entity, LocalStore, Row } from './store'
 import { membersWithNames, type People } from './sync'
 
@@ -356,7 +356,7 @@ export class LocalBackend implements Backend {
     const cleaned = { ...values }
     for (const name of ['reminders_timed', 'reminders_untimed']) {
       if (Array.isArray(cleaned[name])) {
-        checkReminders(cleaned[name] as string[])
+        checkReminders(cleaned[name] as string[], false)
         cleaned[name] = normalizeReminders(cleaned[name] as string[])
       }
     }
@@ -398,8 +398,9 @@ function checkRepeat(rule: string | null | undefined) {
   if (r.includes('COUNT=')) throw new ApiError(400, "COUNT isn't supported; use UNTIL=YYYYMMDD to end a repeat")
 }
 
-function checkReminders(list: string[] | null | undefined) {
+function checkReminders(list: string[] | null | undefined, allowSpecificTimes = true) {
   for (const r of normalizeReminders(list) ?? []) {
-    if (!isValidOffset(r)) throw new ApiError(400, `invalid reminder ${r}; use e.g. 0, -30m, -8h, -1d`)
+    if (!allowSpecificTimes && isSpecificTime(r)) throw new ApiError(400, "default reminders can't be specific times")
+    if (!isValidReminder(r)) throw new ApiError(400, `invalid reminder ${r}; use e.g. -8h, -1d, 0 or @2026-10-27T19:30`)
   }
 }

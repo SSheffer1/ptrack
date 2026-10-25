@@ -782,6 +782,31 @@ a.button.active {
   border-color: var(--accent);
 }
 
+/* A specific-time reminder: a chip with its own × to remove it. */
+.reminders .chip.removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--accent);
+  padding-right: 0.3rem;
+}
+
+.chip-x {
+  border: none;
+  background: none;
+  padding: 0 0.2rem;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.reminders .add-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 button.link {
   border: none;
   background: none;

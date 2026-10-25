@@ -39,7 +39,7 @@ from .auth import Actor
 from . import prefs
 from .models import Change, Comment, Item, ItemType, Member, Project, Role, Status, User, UserPrefs
 from .recurrence import next_due, normalize_rule
-from .reminders import normalize_reminders
+from .reminders import normalize_reminders, shift_reminders
 
 ENTITIES: dict[str, type[SQLModel]] = {"project": Project, "item": Item, "comment": Comment, "prefs": UserPrefs}
 # Projects first, so tickets created in the same batch can refer to them; then tickets, then comments.
@@ -408,6 +408,9 @@ def _spawn_next_occurrences(session: Session, status_changed: list[str]) -> None
             server_set(session, actor, "item", copy, name, getattr(item, name))
         server_set(session, actor, "item", copy, "status", Status.todo)
         server_set(session, actor, "item", copy, "due", due)
+        if item.due and item.reminders:
+            # Specific-time reminders move with the due date ("2 days before this Friday" → next Friday).
+            server_set(session, actor, "item", copy, "reminders", shift_reminders(item.reminders, (due - item.due).days))
         server_set(session, actor, "item", item, "next_id", copy.id)
 
 

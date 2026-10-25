@@ -131,11 +131,11 @@
       <input type="date" bind:value={assignedOn} />
     </label>
   </div>
-  {#if due && (!assignee || assignee === runtime.me?.id)}
+  {#if !assignee || assignee === runtime.me?.id}
     <!-- Reminders belong to whoever the ticket is assigned to; they set their own. -->
     <div class="field">
       <span>Remind me <span class="hint">(on the phone)</span></span>
-      <ReminderPicker value={reminders} timed={!!dueTime} onchange={(r) => (reminders = r)} />
+      <ReminderPicker value={reminders} hasDue={!!due} timed={!!dueTime} onchange={(r) => (reminders = r)} />
     </div>
   {/if}
   {#if error}<p class="error">{error}</p>{/if}

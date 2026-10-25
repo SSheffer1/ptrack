@@ -92,3 +92,21 @@ describe('reminders', () => {
     })
   })
 })
+
+describe('specific-time reminders', () => {
+  it('fire at their time, with or without a due date', () => {
+    const undated = remind([item({ reminders: ['@2026-10-27T19:30'] })], NOW)
+    expect(undated.map((r) => [r.at, r.body])).toEqual([[new Date(2026, 9, 27, 19, 30), 'Reminder · SCHOOL-1']])
+    const dated = remind([item({ due: '2026-10-28', reminders: ['-1d', '@2026-10-25T08:15'] })], NOW)
+    expect(dated.map((r) => r.at)).toEqual([new Date(2026, 9, 25, 8, 15), new Date(2026, 9, 27, 9, 0)])
+  })
+
+  it('skips past times and offsets on undated tickets', () => {
+    expect(remind([item({ reminders: ['@2026-10-01T10:00', '-1d'] })], NOW)).toEqual([])
+  })
+
+  it('normalize like the server and describe as a date', () => {
+    expect(normalizeReminders(['@2026-10-27t19:30', '-8H', '@2026-10-26T09:00'])).toEqual(['-8h', '@2026-10-26T09:00', '@2026-10-27T19:30'])
+    expect(describeOffset('@2026-10-27T19:30', true)).toMatch(/^Tue, Oct 27 · 7:30\s?PM$/)
+  })
+})

@@ -15,7 +15,8 @@ Android app that works offline and syncs to a server you run at home.
   next copy appears with the next due date.
 - **Assigned and completed dates.** Recorded automatically, editable when you entered
   something late, and shown as "2 days early" / "1 day late".
-- **Phone reminders.** Notifications scheduled on the phone itself, so they work offline and
+- **Phone reminders.** Before the due date (pick from a list) or at specific times you add.
+  Notifications scheduled on the phone itself, so they work offline and
   with the app closed. Default: 8 hours before a timed ticket, 9 AM on the day otherwise.
 - **Offline-first Android app.** The phone keeps its own copy of your data; edits made offline
   sync when it reaches the server again.

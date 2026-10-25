@@ -48,5 +48,5 @@ def validate(name: str, value: Any) -> Any:
         if not low <= value <= high:
             raise ValueError(f"{name} must be between {low} and {high}")
     if name.startswith("reminders_"):
-        value = normalize_reminders(value)
+        value = normalize_reminders(value, allow_specific_times=False)
     return value

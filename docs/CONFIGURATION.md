@@ -67,6 +67,7 @@ phone, and the browser-only **offline-first test mode** switch.
 | One-tap reminder choices (timed) | at due time, 1 h, 8 h, 1 day, 2 days, 1 week before | `app/src/lib/reminders.ts` `reminderChoices` |
 | One-tap reminder choices (untimed) | on the day, day before, 2 days, 1 week before | same |
 | Offset format | `0` or `-<n>m/h/d` (up to 4 digits) | both: `server/src/ptrack/reminders.py`, `app/src/lib/reminders.ts` `OFFSET_RE` |
+| Specific-time format | `@YYYY-MM-DDTHH:MM`, phone's local time; works without a due date, not allowed as a default | same, `AT_RE` |
 | Who gets a ticket's reminders | the assignee, or the creator if unassigned | both: `server/src/ptrack/sync.py` `notified_user`, `app/src/lib/types.ts` `notifiedUser` |
 | Max reminders scheduled on a phone | 50 (soonest first) | `app/src/lib/reminders.ts` `upcomingReminders` |
 | Where notifications appear | the Android app only | `app/src/lib/runtime.svelte.ts` |
@@ -77,7 +78,7 @@ phone, and the browser-only **offline-first test mode** switch.
 |---|---|---|
 | Repeat presets | every day / weekday (Mon–Fri) / week / 2 weeks / month / year | `app/src/lib/recurrence.ts` `REPEAT_PRESETS` |
 | Finished late → next due date | first occurrence from today on (skips missed ones) | `server/src/ptrack/recurrence.py` `next_due` |
-| Copied to the next copy | project, title, description, priority, labels, due time, repeat, reminders, assignee, creator | `server/src/ptrack/sync.py` `RECURRING_FIELDS` |
+| Copied to the next copy | project, title, description, priority, labels, due time, repeat, reminders (specific times move by as many days as the due date), assignee, creator | `server/src/ptrack/sync.py` `RECURRING_FIELDS`, `reminders.py` `shift_reminders` |
 | `COUNT=` in rules | rejected (use `UNTIL=`) | both: `recurrence.py` `normalize_rule`, `app/src/lib/local/backend.ts` `checkRepeat` |
 
 ### Tickets, projects and sharing

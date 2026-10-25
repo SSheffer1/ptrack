@@ -58,6 +58,12 @@ describe('LocalBackend', () => {
     expect((await api.updateItem(id, { status: 'done', completed_on: '2026-10-01' })).completed_on).toBe('2026-10-01')
   })
 
+  it('accepts specific-time reminders, real dates only', async () => {
+    const item = await api.createItem({ project: 'HOME', title: 'x', reminders: ['@2026-10-27t19:30', '-1d'] })
+    expect(item.reminders).toEqual(['-1d', '@2026-10-27T19:30'])
+    await expect(api.createItem({ project: 'HOME', title: 'x', reminders: ['@2026-02-30T10:00'] })).rejects.toMatchObject({ status: 400 })
+  })
+
   it('normalizes due time and repeat like the server', async () => {
     const item = await api.createItem({ project: 'HOME', title: 'x', due: '2026-11-06', due_time: '23:59', repeat: 'rrule:freq=weekly' })
     expect(item.due_time).toBe('23:59:00')
@@ -134,6 +140,7 @@ describe('LocalBackend', () => {
     expect(store.pending('phone').filter((e) => e.entity === 'prefs').map((e) => e.entity_id)).toEqual(['alice', 'alice'])
     expect(await api.updatePrefs({ week_start: null })).toEqual({ reminders_timed: ['-1d', '-8h'] })
     await expect(api.updatePrefs({ colour: 'blue' })).rejects.toMatchObject({ status: 400 })
+    await expect(api.updatePrefs({ reminders_timed: ['@2026-10-27T19:30'] })).rejects.toMatchObject({ status: 400 })
   })
 
   it('comments: the author edits and deletes; the owner deletes others\u2019', async () => {
