@@ -1,5 +1,13 @@
-# Caddy sits in front of ptrack and passes every request through to it.
+# Caddy sits in front of ptrack and passes requests through to it.
 # Home network only, plain HTTP for now.
 :80 {
-	reverse_proxy ptrack:8000
+	# The Android app, if you put one in deploy/downloads/ (see the README).
+	handle /ptrack.apk {
+		root * /srv/downloads
+		header Content-Type application/vnd.android.package-archive
+		file_server
+	}
+	handle {
+		reverse_proxy ptrack:8000
+	}
 }

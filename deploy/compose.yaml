@@ -22,6 +22,7 @@ services:
       - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./downloads:/srv/downloads:ro  # e.g. ptrack.apk for phones to download
       - caddy-data:/data
     depends_on:
       - ptrack

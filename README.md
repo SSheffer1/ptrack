@@ -82,7 +82,9 @@ in the app (Settings → Family accounts) or with `ptrack-admin`; see
 
 The Android app: build it as described below, or download `ptrack.apk` from a GitHub
 release once there is one. In the app, sign in with your server's address
-(e.g. `http://192.168.1.20`).
+(e.g. `http://192.168.1.20`). To let phones download it from the server, copy the APK to
+`deploy/downloads/ptrack.apk` on the server; it's then at `http://<server-address>/ptrack.apk`
+(no restart needed after the first time).
 
 ## Development setup
 
