@@ -300,6 +300,7 @@ Build (new `deploy/` folder + server image):
 | D-039 | 2026-10-24 | **No development on the server box.** The laptop is the only dev machine (code, tests, commits, pushes). The box only pulls from GitHub and runs `docker compose`; its clone is pull-only. Deploy files (`deploy/`) are written and tested on the laptop. The box is managed from the laptop over SSH (or by the user running given commands). Supersedes the stick's HANDOFF.md, which told a Claude on the box to build M6 there. | User: "i really dont want any development to happen from the box". | Active |
 | D-040 | 2026-10-24 | (1) **The box is a running product in testing**: back up its data before any change, keep downtime minimal. (2) **GitHub must always be sanitized and usable out of the box**: no IPs, device ids, family names, secrets or machine-specific settings in tracked files; a fresh clone + the README's commands must work. Private specifics live in the laptop-only, git-ignored `CLAUDE.local.md`. The log was sanitized accordingly (older commits still contain some details; a history rewrite would need a force-push and the user's OK). | User: "the box is a running product rn in testing and anything on the github should be sanitzied so that at any given moment someone could clone and use it out of the box". | Active |
 | D-041 | 2026-10-25 | Product name **PTrack** everywhere a person sees it: header, page title, Android app label, sign-in screen, README, API title. Technical names stay `ptrack` (repo, Python package, `ptrack-admin`/`ptrack-serve`, Docker names, Android app id `io.github.ssheffer1.ptrack`, data file names) — renaming them would break installs and links for no visible gain. | User: "i think im keeping the name PTrack". | Active |
+| D-042 | 2026-10-25 | Native iOS app shelved. If revisited: Capacitor `cap add ios`; needs a Mac with Xcode (or a cloud macOS runner), the Apple Developer Program ($99/yr) for lasting installs, HTTPS on the server (iOS blocks plain HTTP), and TestFlight (90-day builds) or ad hoc distribution. Cheaper path for iPhone users: make the web app an installable PWA (offline; reminders would need Web Push from the server). | User: "lets shelf the ios app for now". | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---
@@ -338,6 +339,7 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — Calendar: removed the search box (`Filters search={false}`; the calendar also ignores the List's search text) and the ‹ Today › row; arrows now flank the month name ("‹ October 2026 ›"), no Today button. Type check clean; installed on the phone. Phone was locked, so no screenshot check (don't try to drive a locked phone).
 - **2026-10-25** — Agenda: search box removed too (`search={false}`, ignores the List's search text). Slip: an inline comment swallowed `.then(`; svelte-check caught it but `check | grep` doesn't fail a chain, so a stale APK was rebuilt and installed (harmless, previous version). Fixed; build/install now runs under `bash -euo pipefail` with the type check gating everything. Installed on the phone.
 - **2026-10-25** — Committed + pushed `cb5d79e` (calendar/agenda without search; month arrows by the title). Box: backup, pull, rebuild: healthy in ~30 s, data intact.
+- **2026-10-25** — Explained what a native iOS app involves (Mac/Xcode, $99/yr, HTTPS, TestFlight/ad hoc, PWA alternative). User shelved it (D-042).
 
 ---
 
@@ -354,4 +356,4 @@ Build (new `deploy/` folder + server image):
 9. ~~Milestone 7: multi-user (accounts, shared projects, assignees).~~ Done 2026-10-24.
 10. ~~Configuration: server ptrack.toml + per-user preferences + COMMANDS.md.~~ Done 2026-10-24.
 11. **Milestone 6 = v1.0 release** on the Debian box: see *Milestone 6 plan*.
-12. Later / optional: app icon, ICS feed, kanban (shelved), quick-add (shelved), offline desktop app, project name (Q9).
+12. Later / optional: ICS feed, kanban (shelved), quick-add (shelved), native iOS app (shelved, D-042) or PWA, offline desktop app.
