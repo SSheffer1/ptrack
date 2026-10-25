@@ -5,6 +5,8 @@ Everything the API does lives under /api. If the web app has been built
 handles both the pages and the data.
 """
 
+import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,6 +14,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from . import backup
 from .api import router
 from .auth import admin_router, public_router
 from .auth import router as auth_router
@@ -21,11 +24,22 @@ from .db import init_db
 
 STATIC_DIR = Path(settings.static_dir)
 
+# PTrack's own log messages (e.g. "backup written") alongside the web server's.
+_log = logging.getLogger("ptrack")
+if not _log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s: %(message)s"))
+    _log.addHandler(_handler)
+    _log.setLevel(logging.INFO)
+    _log.propagate = False
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db()
+    nightly = asyncio.create_task(backup.run_nightly())  # see backup.py
     yield
+    nightly.cancel()
 
 
 app = FastAPI(title="PTrack", lifespan=lifespan)

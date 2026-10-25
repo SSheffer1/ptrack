@@ -71,7 +71,9 @@ Then open `http://<server-address>` in a browser and sign in. Other accounts can
 in the app (Settings → Family accounts) or with `ptrack-admin`; see
 [server/COMMANDS.md](server/COMMANDS.md).
 
-- Data lives in the Docker volume `deploy_ptrack-data` and survives rebuilds.
+- Data lives in the Docker volume `deploy_ptrack-data` and survives rebuilds. The server
+  backs it up every night (3 AM, 14 days kept) into the same volume; restoring is in
+  [server/COMMANDS.md](server/COMMANDS.md).
 - Updating: `git pull && docker compose -f deploy/compose.yaml up -d --build`.
 - Server settings for the container: [deploy/ptrack.toml](deploy/ptrack.toml).
 - For now this serves plain HTTP on port 80, meant for a home network. Don't expose it to

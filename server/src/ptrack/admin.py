@@ -11,6 +11,7 @@ import sys
 
 from sqlmodel import Session, col, select
 
+from . import backup
 from .auth import MIN_PASSWORD, USERNAME_PATTERN, create_user, hash_password
 from .config import describe, settings
 from .db import engine, init_db
@@ -54,10 +55,21 @@ def main() -> None:
     admin.add_argument("--off", action="store_true")
     commands.add_parser("sign-out", help="sign an account out on all its devices").add_argument("username")
     commands.add_parser("show-config", help="print the server settings in effect (ptrack.toml + defaults)")
+    commands.add_parser("backup", help="back up the database now (and delete expired backups)")
+    commands.add_parser("list-backups", help="show the backups")
     args = parser.parse_args()
 
     if args.command == "show-config":
         print(describe(settings), end="")
+        return
+    if args.command in ("backup", "list-backups"):
+        db = backup.database_path()
+        if db is None:
+            sys.exit("backups only work with a SQLite database")
+        if args.command == "backup":
+            print(f"written {backup.backup_now()}")
+        for when, path in backup.list_backups(backup.backup_folder(db)):
+            print(f"{when:%Y-%m-%d %H:%M}  {path.stat().st_size / 1024:8.0f} KB  {path}")
         return
 
     init_db()  # make sure the schema is current

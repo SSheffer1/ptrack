@@ -28,6 +28,10 @@ are an error. Environment variables `PTRACK_CONFIG` (which file), `PTRACK_DB` an
 | `[accounts] login_delay_seconds` | `1` | pause after a wrong password, to slow down guessing |
 | `[accounts] device_idle_days` | `0` (never) | sign out devices unused for this many days |
 | `[sync] page_size` | `1000` | changes per sync response |
+| `[backup] enabled` | `true` | nightly copies of the database (SQLite only) |
+| `[backup] dir` | a `backups` folder next to the database | where the copies go (in Docker: `/data/backups`, inside the data volume) |
+| `[backup] hour` | `3` | when, in the server's local time (Docker uses the host's time zone) |
+| `[backup] keep_days` | `14` | older copies are deleted; the newest is always kept |
 
 Accounts themselves are managed with `uv run ptrack-admin …` (see
 [server/COMMANDS.md](../server/COMMANDS.md)) or in the app (Settings → Family

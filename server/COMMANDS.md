@@ -28,6 +28,8 @@ with a letter. Admins can also do most of this in the app: Settings → Family a
 | `uv run fastapi dev src/ptrack/main.py` | Development server on :8000 that restarts on every code change. |
 | `uv run fastapi dev src/ptrack/main.py --host 0.0.0.0` | Same, reachable from phones on the network. |
 | `uv run ptrack-admin show-config` | Print the settings in effect (`ptrack.toml` + defaults). |
+| `uv run ptrack-admin backup` | Back up the database now (and delete expired backups). |
+| `uv run ptrack-admin list-backups` | Show the backups, newest last. |
 
 Settings: copy `ptrack.example.toml` to `ptrack.toml` and edit it. Every setting is
 explained in that file. `PTRACK_CONFIG=/path/to/file.toml` uses a different file;
@@ -42,7 +44,7 @@ button by pasting a token, or use the app).
 |---|---|
 | (nothing) | The server upgrades the database automatically on startup. |
 | `uv run alembic current` | Show which schema version the database is at. |
-| `sqlite3 ptrack.db ".backup backup.db"` | Make a consistent copy, even while the server runs. |
+| (nothing) | The server also backs itself up every night at 3 AM into `backups/`, keeping 14 days ([backup] in `ptrack.toml`). |
 
 After changing `src/ptrack/models.py`, generate a migration (stop the dev server
 first: its auto-reload would apply a half-written one):
@@ -76,3 +78,22 @@ From the repo root, on the server. `C="docker compose -f deploy/compose.yaml"` s
 | `$C exec ptrack ptrack-admin <command>` | Any `ptrack-admin` command above, inside the container. |
 | `$C restart ptrack` | Restart the server. |
 | `$C down` | Stop everything (data stays in the `deploy_ptrack-data` volume). |
+| `$C exec ptrack ptrack-admin list-backups` | The nightly backups (in the data volume, `/data/backups`). |
+| `$C exec ptrack ptrack-admin backup` | Back up now. |
+| `docker cp deploy-ptrack-1:/data/backups ./ptrack-backups` | Copy the backups out of Docker, e.g. to keep another copy elsewhere. |
+
+### Restoring a backup
+
+The backups sit on the same disk as the database: they protect against mistakes and
+corruption, not a dead disk. Copy them elsewhere now and then (command above).
+
+```bash
+$C exec ptrack ptrack-admin list-backups               # pick one, e.g. ptrack-20261025-030000.db
+$C exec ptrack ptrack-admin backup                     # first, a copy of how things are now
+$C stop ptrack
+docker run --rm -v deploy_ptrack-data:/data --entrypoint cp ptrack \
+  /data/backups/ptrack-20261025-030000.db /data/ptrack.db   # uses the PTrack image itself
+$C start ptrack
+```
+
+Devices sync to the restored state on their next sync; edits made after the backup are lost.

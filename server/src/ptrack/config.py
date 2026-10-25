@@ -35,6 +35,11 @@ class Settings:
     device_idle_days: int = 0  # sign a device out after this many days unused; 0 = never
     # [sync]
     sync_page_size: int = 1000  # changes per sync response
+    # [backup]
+    backup_enabled: bool = True  # nightly copies of the database (SQLite only)
+    backup_dir: str = ""  # where they go; "" = a "backups" folder next to the database
+    backup_hour: int = 3  # hour of the day (0-23, server's local time)
+    backup_keep_days: int = 14  # older copies are deleted; the newest is always kept
 
 
 # Where each setting lives in the file: section → {key in file: Settings field}.
@@ -47,6 +52,12 @@ SECTIONS: dict[str, dict[str, str]] = {
         "device_idle_days": "device_idle_days",
     },
     "sync": {"page_size": "sync_page_size"},
+    "backup": {
+        "enabled": "backup_enabled",
+        "dir": "backup_dir",
+        "hour": "backup_hour",
+        "keep_days": "backup_keep_days",
+    },
 }
 
 ENV_OVERRIDES = {"PTRACK_DB": "database_url", "PTRACK_STATIC": "static_dir"}
@@ -78,13 +89,18 @@ def load(path: Path | None = None, env: dict[str, str] | None = None) -> Setting
 
     types = {f.name: f.type for f in fields(Settings)}
     for name, value in values.items():
-        expected = float if types[name] is float else types[name]
-        ok = isinstance(value, (int, float) if expected is float else expected)  # type: ignore[arg-type]
-        if not ok or isinstance(value, bool):
+        expected = types[name]
+        if expected is bool:
+            ok = isinstance(value, bool)
+        else:  # TOML true/false must not count as a number
+            ok = isinstance(value, (int, float) if expected is float else expected) and not isinstance(value, bool)  # type: ignore[arg-type]
+        if not ok:
             raise ConfigError(f"setting {name} should be a {getattr(expected, '__name__', expected)}, not {value!r}")
     settings = Settings(**values)  # type: ignore[arg-type]
     if settings.min_password_length < 1 or settings.device_idle_days < 0 or settings.sync_page_size < 1:
         raise ConfigError("min_password_length and sync_page_size must be positive; device_idle_days ≥ 0")
+    if not 0 <= settings.backup_hour <= 23 or settings.backup_keep_days < 1:
+        raise ConfigError("backup hour must be 0-23 and keep_days at least 1")
     return settings
 
 
@@ -94,9 +110,15 @@ def describe(settings: Settings) -> str:
     lines = []
     for section, keys in SECTIONS.items():
         lines.append(f"[{section}]")
-        lines += [f"{key} = {current[name]!r}".replace("'", '"') for key, name in keys.items()]
+        lines += [f"{key} = {_toml(current[name])}" for key, name in keys.items()]
         lines.append("")
     return "\n".join(lines)
+
+
+def _toml(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return repr(value).replace("'", '"')
 
 
 settings = load()

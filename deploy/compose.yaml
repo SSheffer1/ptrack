@@ -11,7 +11,9 @@ services:
     image: ptrack
     restart: unless-stopped
     volumes:
-      - ptrack-data:/data
+      - ptrack-data:/data  # the database, and its nightly backups in /data/backups
+      # Use the server's time zone (completion dates, the 3 AM backup); containers default to UTC.
+      - /etc/localtime:/etc/localtime:ro
 
   caddy:
     image: caddy:2
