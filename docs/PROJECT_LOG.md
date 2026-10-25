@@ -359,6 +359,7 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — Pushed `0ee0ff6` (new-ticket description, Projects spacing, placeholders). Box: backup, pull, rebuild: healthy, data intact.
 - **2026-10-25** — Built specific-time reminders (D-046): server validation/sorting/shifting for repeats, app picker, scheduling for undated tickets, local backend checks. 100 server + 40 app tests; installed on the phone. Committed + pushed with a box update.
 - **2026-10-25** — Box serves the APK (D-047): Caddy route `/ptrack.apk` → `deploy/downloads/`, compose mount, README note. Config validated on the box before restarting Caddy.
+- **2026-10-25** — Added `todo.md` in the repo root: every feature considered and where it stands (next up, v1.0, planned later, shelved, decided against, unpicked ideas, known issues, done). User added a terminal interface and an MCP server (AI access) to the planned features; plain bullets, no checkboxes.
 
 ---
 
