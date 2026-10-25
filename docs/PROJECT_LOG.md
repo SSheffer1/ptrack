@@ -344,6 +344,7 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — Explained what a native iOS app involves (Mac/Xcode, $99/yr, HTTPS, TestFlight/ad hoc, PWA alternative). User shelved it (D-042).
 - **2026-10-25** — Discussed HTTPS: Squarespace has no DNS API (web search found none); verified `caddy-dns/desec` and `caddy-dns/cloudflare` exist and are maintained. Walked the user through option A (deSEC DNS) step by step; user shelved HTTPS (D-043).
 - **2026-10-25** — Built nightly backups (D-044) on the laptop: 5 new tests (94 total), live check on a scratch DB (startup catch-up backup written + logged, `list-backups` works). Found the container's clock is UTC while the box uses local time → mount `/etc/localtime`. Restore procedure documented but not exercised on the live box. Uncommitted, awaiting OK to deploy.
+- **2026-10-25** — Committed + pushed `fc7cf5f` (backups). Its message lost two backticked command names to shell substitution (unquoted heredoc) — cosmetic, left as is; use `<<'EOF'` for commit messages. Box: backup, pull, rebuild, healthy; container clock now matches the box; startup catch-up backup written to `/data/backups`; data intact. Also: `docker compose exec` without `</dev/null` swallows the rest of a script piped over ssh.
 
 ---
 
