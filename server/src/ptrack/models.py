@@ -104,7 +104,7 @@ class Item(SQLModel, table=True):
     project_id: str | None = Field(default=None, index=True)
     number: int | None = None  # assigned by the server; the 12 in HOME-12
     title: str = ""
-    body: str = ""  # markdown
+    body: str = ""  # plain text
     status: Status = Status.todo
     priority: Priority = Priority.none
     labels: list[str] = Field(default_factory=list, sa_column=Column(JSON))

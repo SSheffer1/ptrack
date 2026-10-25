@@ -332,7 +332,7 @@
 
     <label>
       Description
-      <textarea bind:value={body} rows="8" placeholder="Notes, links, checklists… (Markdown)"></textarea>
+      <textarea bind:value={body} rows="8" placeholder="Notes, links, steps…"></textarea>
     </label>
     {#if body !== item.body}
       <div class="actions">

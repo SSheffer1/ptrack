@@ -16,6 +16,7 @@
   // Start with the project the views are filtered to, or the first one.
   let project = $state(filters.project || projects.list[0]?.key || '')
   let title = $state('')
+  let body = $state('')
   let priority = $state<Priority>('none')
   let due = $state('')
   let dueTime = $state('')
@@ -49,6 +50,7 @@
       const item = await api.createItem({
         project,
         title: title.trim(),
+        body: body.trim(),
         priority,
         due: due || null,
         due_time: (due && dueTime) || null,
@@ -71,6 +73,10 @@
     Title
     <!-- svelte-ignore a11y_autofocus -->
     <input bind:value={title} placeholder="Study for circuits exam" required autofocus />
+  </label>
+  <label>
+    Description <span class="hint">(optional)</span>
+    <textarea bind:value={body} rows="3" placeholder="Notes, links, steps…"></textarea>
   </label>
   <div class="row">
     <label>

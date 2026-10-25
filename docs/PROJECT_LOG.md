@@ -351,6 +351,9 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — User likes the Status dropdown; the first list item touched the +Project/+Ticket buttons (the removed chips row used to provide the spacing) → `.filters` gets `margin-bottom`. Built; phone not connected for install. Still uncommitted (comments edit/delete + status dropdown + spacing).
 - **2026-10-25** — Spacing fix installed (adb flaky again: "connection terminated"; a retry worked). User: app looks good → committed + pushed comment edit/delete, Status dropdown, filters spacing.
 - **2026-10-25** — Pushed `194fb4c` (a quoting slip truncated the first commit message; amended before pushing, so history is clean). Box: `ptrack-admin backup`, pull, rebuild: healthy, data intact.
+- **2026-10-25** — User noticed the new-ticket form had no description field → added an optional Description textarea under the title (the API already accepted `body`). Built; phone not reachable over adb (also downloadable from the laptop dev server at /ptrack.apk). Uncommitted.
+- **2026-10-25** — Same spacing issue on the Projects tab (header row touching the list) → `.toolbar` gets the same `margin-bottom` as `.filters`. Built; uncommitted.
+- **2026-10-25** — Description placeholders now match ("Notes, links, steps…" on both the new-ticket form and the ticket page); removed remaining Markdown mentions (README feature list, a model comment) per D-045.
 
 ---
 

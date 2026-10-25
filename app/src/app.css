@@ -254,6 +254,7 @@ label > textarea {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  margin-bottom: 0.9rem; /* space before the list below, same as .filters */
 }
 
 .toolbar select {

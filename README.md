@@ -7,7 +7,7 @@ Android app that works offline and syncs to a server you run at home.
 ## Features
 
 - **Tickets like an issue tracker.** Projects with keys (`HOME-12`), statuses
-  (Backlog → To do → In progress → Blocked → Done), priorities, labels, Markdown
+  (Backlog → To do → In progress → Blocked → Done), priorities, labels, plain-text
   descriptions, comments, and a full history of every change.
 - **Calendar and agenda.** Due dates (with optional times) on a month calendar and a
   day-by-day agenda; finished tickets stay visible, struck through, on the day you did them.
