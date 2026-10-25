@@ -42,9 +42,11 @@
         <option value={value as SortOrder}>{label}</option>
       {/each}
     </select>
-    <div class="spacer"></div>
-    <button onclick={() => (adding = 'project')}>+ Project</button>
-    <button class="primary" onclick={() => (adding = 'ticket')} disabled={projects.list.length === 0}>+ Ticket</button>
+    <!-- Pushed right; drops to its own line when the row is full. -->
+    <div class="row-end">
+      <button onclick={() => (adding = 'project')}>+ Project</button>
+      <button class="primary" onclick={() => (adding = 'ticket')} disabled={projects.list.length === 0}>+ Ticket</button>
+    </div>
   {/snippet}
 </Filters>
 

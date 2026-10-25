@@ -110,6 +110,7 @@ export interface Comment {
   body: string
   created_by: string | null
   created_at: number
+  edited: boolean // the text was changed after it was posted
 }
 
 export interface Change {
@@ -166,6 +167,9 @@ export interface Backend {
   getHistory(ref: string): Promise<Change[]>
   listComments(ref: string): Promise<Comment[]>
   addComment(ref: string, body: string): Promise<Comment>
+  // Only the author edits a comment's text; the author or the project's owner may delete it.
+  editComment(ref: string, commentId: string, body: string): Promise<Comment>
+  deleteComment(ref: string, commentId: string): Promise<void>
   // Sharing. Only the owner may rename/delete a project or add/remove others;
   // anyone may remove themself (leave). Adding/removing members needs a connection.
   updateProject(key: string, fields: { name?: string }): Promise<Project>

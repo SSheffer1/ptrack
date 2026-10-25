@@ -275,6 +275,7 @@ label > textarea {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.9rem; /* space before the list below */
 }
 
 .filters-row {
@@ -791,14 +792,6 @@ button.link {
 
 /* --- People and sharing --------------------------------------------------------- */
 
-.chip-gap {
-  width: 0.5rem;
-}
-
-.chip.mine.on {
-  color: var(--accent);
-  border-color: var(--accent);
-}
 
 .assignee {
   color: var(--muted);
@@ -887,4 +880,104 @@ button.link {
 .prefs .chip.status-done.on {
   color: var(--status-color);
   border-color: var(--status-color);
+}
+
+.comment-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.comment-meta .link {
+  font-size: 0.75rem;
+}
+
+button.link.danger-link {
+  color: var(--danger);
+}
+
+.comment-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* --- Status dropdown (StatusFilter.svelte) ---------------------------------------- */
+
+.filters-row.wrap {
+  flex-wrap: wrap;
+}
+
+.row-end {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.status-filter {
+  position: relative;
+}
+
+.status-filter summary {
+  list-style: none; /* hide the default triangle */
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.status-filter summary::-webkit-details-marker {
+  display: none;
+}
+
+.status-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 13rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.status-panel hr {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.3rem 0;
+}
+
+label.status-option {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+label.status-option:hover {
+  background: var(--bg);
+}
+
+.status-option input {
+  width: auto;
+  margin: 0;
+}
+
+.status-option .dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--status-color);
 }

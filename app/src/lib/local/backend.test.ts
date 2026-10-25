@@ -135,5 +135,30 @@ describe('LocalBackend', () => {
     expect(await api.updatePrefs({ week_start: null })).toEqual({ reminders_timed: ['-1d', '-8h'] })
     await expect(api.updatePrefs({ colour: 'blue' })).rejects.toMatchObject({ status: 400 })
   })
+
+  it('comments: the author edits and deletes; the owner deletes others\u2019', async () => {
+    const { id } = await api.createItem({ project: 'HOME', title: 'Fix sink' })
+    const mine = await api.addComment(id, 'on it')
+    expect(mine.edited).toBe(false)
+    const edited = await api.editComment(id, mine.id, 'on it, tomorrow')
+    expect([edited.body, edited.edited]).toEqual(['on it, tomorrow', true])
+    await expect(api.editComment(id, mine.id, '  ')).rejects.toMatchObject({ status: 422 })
+
+    // Bob's comment arrives by sync; I'm an editor here, not the owner.
+    syncedMembers({ alice: 'editor', bob: 'owner' })
+    for (const [field, value] of [['item_id', id], ['body', 'from bob'], ['created_by', 'bob']] as const) {
+      store.apply({ entity: 'comment', entity_id: 'c-bob', field, value, ts: Date.now() + 10, device_id: 'server', seq: 200 })
+    }
+    await expect(api.editComment(id, 'c-bob', 'mine now')).rejects.toMatchObject({ status: 403 })
+    await expect(api.deleteComment(id, 'c-bob')).rejects.toMatchObject({ status: 403 })
+    await api.deleteComment(id, mine.id)
+    expect((await api.listComments(id)).map((c) => c.body)).toEqual(['from bob'])
+
+    // As the owner I may delete Bob's comment (but still not edit it).
+    syncedMembers({ alice: 'owner', bob: 'editor' })
+    await expect(api.editComment(id, 'c-bob', 'mine now')).rejects.toMatchObject({ status: 403 })
+    await api.deleteComment(id, 'c-bob')
+    expect(await api.listComments(id)).toEqual([])
+  })
 })
 

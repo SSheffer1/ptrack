@@ -282,9 +282,16 @@ def _check_permission(session: Session, actor: Actor, change: ChangeIn, value: A
         if change.field == "reminders" and item and item.created_by and notified_user(item) != actor.id:
             raise Denied("only the person the ticket is assigned to can change its reminders")
     else:
+        # A comment's author may edit or delete it; the project's owner may also delete it.
         comment = session.get(Comment, change.entity_id)
-        if comment and comment.created_by and comment.created_by != actor.id and role != Role.owner:
-            raise Denied("only the author can edit a comment")
+        if comment and comment.created_by:
+            mine = comment.created_by == actor.id
+            if change.field == "item_id" and value != comment.item_id:
+                raise Denied("comments can't move to another ticket")
+            if change.field == "deleted" and not (mine or role == Role.owner):
+                raise Denied("only the author or the project's owner can delete a comment")
+            if change.field == "body" and not mine:
+                raise Denied("only the author can edit a comment")
 
 
 def notified_user(item: Item) -> str | None:

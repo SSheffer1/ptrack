@@ -110,6 +110,37 @@
     }
   }
 
+  // Editing a comment: which one, and its draft text.
+  let editingComment = $state<string | null>(null)
+  let commentDraft = $state('')
+
+  function startEditing(c: Comment) {
+    editingComment = c.id
+    commentDraft = c.body
+  }
+
+  async function saveComment(e: SubmitEvent, c: Comment) {
+    e.preventDefault()
+    if (!item || !commentDraft.trim()) return
+    try {
+      const updated = await api.editComment(item.id, c.id, commentDraft.trim())
+      comments = comments.map((x) => (x.id === c.id ? updated : x))
+      editingComment = null
+    } catch (err) {
+      error = errorText(err)
+    }
+  }
+
+  async function deleteComment(c: Comment) {
+    if (!item || !confirm('Delete this comment?')) return
+    try {
+      await api.deleteComment(item.id, c.id)
+      comments = comments.filter((x) => x.id !== c.id)
+    } catch (err) {
+      error = errorText(err)
+    }
+  }
+
   async function remove() {
     if (!item || !confirm(`Delete ${item.key ?? 'this ticket'}?`)) return
     try {
@@ -315,8 +346,28 @@
     <h3>Comments</h3>
     {#each comments as c (c.id)}
       <div class="comment">
-        <p>{c.body}</p>
-        <time title={exactTime(c.created_at)}>{c.created_by ? `${userName(c.created_by)} · ` : ''}{ago(c.created_at)}</time>
+        {#if editingComment === c.id}
+          <form class="comment-edit" onsubmit={(e) => saveComment(e, c)}>
+            <textarea bind:value={commentDraft} rows="3" aria-label="Edit comment"></textarea>
+            <div class="actions">
+              <button type="button" onclick={() => (editingComment = null)}>Cancel</button>
+              <button type="submit" class="primary" disabled={!commentDraft.trim() || commentDraft.trim() === c.body}>Save</button>
+            </div>
+          </form>
+        {:else}
+          <p>{c.body}</p>
+          <div class="comment-meta">
+            <time title={exactTime(c.created_at)}
+              >{c.created_by ? `${userName(c.created_by)} · ` : ''}{ago(c.created_at)}{c.edited ? ' · edited' : ''}</time
+            >
+            {#if c.created_by === me}
+              <button type="button" class="link" onclick={() => startEditing(c)}>Edit</button>
+            {/if}
+            {#if c.created_by === me || isOwner}
+              <button type="button" class="link danger-link" onclick={() => deleteComment(c)}>Delete</button>
+            {/if}
+          </div>
+        {/if}
       </div>
     {:else}
       <p class="hint">No comments yet.</p>

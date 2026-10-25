@@ -1,17 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { STATUS_LABELS, STATUSES, type Status } from './lib/api'
+  import StatusFilter from './StatusFilter.svelte'
   import { filters, projects } from './lib/state.svelte'
 
-  // `actions` = the view's own controls, shown as a second row (beside the first on wide screens).
-  // `search = false` hides the search box (the calendar has no use for it).
+  // Row 1: search (if shown) and project. The status dropdown goes on row 2 with the
+  // view's own controls (`actions`); without a search box it fits on row 1 instead.
+  // `search = false` hides the search box (the calendar and agenda have no use for it).
   let { actions, search = true }: { actions?: Snippet; search?: boolean } = $props()
-
-  function toggleStatus(s: Status) {
-    filters.statuses = filters.statuses.includes(s)
-      ? filters.statuses.filter((x) => x !== s)
-      : [...filters.statuses, s]
-  }
 </script>
 
 <section class="filters">
@@ -25,20 +20,12 @@
         <option value={p.key}>{p.key} · {p.name}</option>
       {/each}
     </select>
+    {#if !search}<StatusFilter />{/if}
   </div>
-  {#if actions}
-    <div class="filters-row">{@render actions()}</div>
+  {#if search || actions}
+    <div class="filters-row wrap">
+      {#if search}<StatusFilter />{/if}
+      {@render actions?.()}
+    </div>
   {/if}
-</section>
-
-<section class="chips" aria-label="Status filter">
-  {#each STATUSES as s (s)}
-    <button class="chip status-{s}" class:on={filters.statuses.includes(s)} onclick={() => toggleStatus(s)}>
-      {STATUS_LABELS[s]}
-    </button>
-  {/each}
-  <span class="chip-gap"></span>
-  <button class="chip mine" class:on={filters.mine} onclick={() => (filters.mine = !filters.mine)}>
-    Assigned to me
-  </button>
 </section>

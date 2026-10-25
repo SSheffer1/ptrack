@@ -302,13 +302,42 @@ export class LocalBackend implements Backend {
     return [...this.store.rows.comment.values()]
       .filter((c) => c.item_id === item.id && !c.deleted)
       .sort((a, b) => a.created_at - b.created_at)
-      .map((c) => ({
-        id: c.id,
-        item_id: c.item_id as string,
-        body: c.body as string,
-        created_by: (c.created_by as string | null) ?? (this.me() || null),
-        created_at: c.created_at,
-      }))
+      .map((c) => this.toComment(c))
+  }
+
+  private toComment(c: Row): Comment {
+    return {
+      id: c.id,
+      item_id: c.item_id as string,
+      body: c.body as string,
+      created_by: (c.created_by as string | null) ?? (this.me() || null), // made here, not synced yet: mine
+      created_at: c.created_at,
+      edited: this.store.historyOf(c.id).filter((e) => e.field === 'body').length > 1,
+    }
+  }
+
+  private findComment(ref: string, commentId: string): Row {
+    const item = this.findItem(ref)
+    const c = this.store.rows.comment.get(commentId)
+    if (!c || c.item_id !== item.id || c.deleted) throw new ApiError(404, 'comment not found')
+    return c
+  }
+
+  async editComment(ref: string, commentId: string, body: string): Promise<Comment> {
+    const c = this.findComment(ref, commentId)
+    if (this.toComment(c).created_by !== this.me()) throw new ApiError(403, 'only the author can edit a comment')
+    if (!body.trim()) throw new ApiError(422, 'body: must not be empty')
+    this.write('comment', c.id, { body })
+    return this.toComment(c)
+  }
+
+  async deleteComment(ref: string, commentId: string): Promise<void> {
+    const c = this.findComment(ref, commentId)
+    const mine = this.toComment(c).created_by === this.me()
+    if (!mine && this.role(this.findItem(ref).project_id as string) !== 'owner') {
+      throw new ApiError(403, "only the author or the project's owner can delete a comment")
+    }
+    this.write('comment', c.id, { deleted: true })
   }
 
   // --- Preferences ---------------------------------------------------------------
@@ -340,8 +369,7 @@ export class LocalBackend implements Backend {
     if (!body.trim()) throw new ApiError(422, 'body: must not be empty')
     const id = newId()
     this.write('comment', id, { item_id: item.id, body })
-    const c = this.store.rows.comment.get(id)!
-    return { id, item_id: item.id, body, created_by: this.me() || null, created_at: c.created_at }
+    return this.toComment(this.store.rows.comment.get(id)!)
   }
 }
 

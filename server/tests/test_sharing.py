@@ -137,3 +137,34 @@ def test_ticket_created_by_phone_records_creator(client, home):
     item_id, changes = new_ticket(home["id"], "From the phone", ts=1000)
     sync(client, "phone", changes)
     assert client.get(f"/items/{item_id}").json()["created_by"] == client.user_id
+
+
+def test_comment_edit_and_delete_permissions(client, bob, sign_in, home):
+    carol = sign_in("carol")
+    client.post("/items", json={"project": "HOME", "title": "Fix sink"})
+    share(client, "HOME", "bob")
+    share(client, "HOME", "carol")
+    bobs = bob.post("/items/HOME-1/comments", json={"body": "on it"}).json()
+    assert bobs["edited"] is False
+
+    # Bob edits his own comment; it's marked edited.
+    edited = bob.patch(f"/items/HOME-1/comments/{bobs['id']}", json={"body": "on it, tomorrow"}).json()
+    assert (edited["body"], edited["edited"]) == ("on it, tomorrow", True)
+
+    # Nobody else rewords it, not even the owner; another editor can't delete it.
+    assert client.patch(f"/items/HOME-1/comments/{bobs['id']}", json={"body": "nope"}).status_code == 403
+    assert carol.delete(f"/items/HOME-1/comments/{bobs['id']}").status_code == 403
+    assert bob.patch(f"/items/HOME-1/comments/{bobs['id']}", json={"body": ""}).status_code == 422
+
+    # The owner can delete it; then it's gone.
+    assert client.delete(f"/items/HOME-1/comments/{bobs['id']}").status_code == 204
+    assert client.get("/items/HOME-1/comments").json() == []
+    assert bob.delete(f"/items/HOME-1/comments/{bobs['id']}").status_code == 404
+
+
+def test_authors_delete_their_own_comments(client, bob, home):
+    client.post("/items", json={"project": "HOME", "title": "Fix sink"})
+    share(client, "HOME", "bob")
+    c = bob.post("/items/HOME-1/comments", json={"body": "oops"}).json()
+    assert bob.delete(f"/items/HOME-1/comments/{c['id']}").status_code == 204
+    assert client.get("/items/HOME-1/comments").json() == []

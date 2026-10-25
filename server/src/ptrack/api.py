@@ -387,26 +387,72 @@ class CommentCreate(BaseModel):
     body: str = Field(min_length=1)
 
 
-@router.get("/items/{ref}/comments")
-def list_comments(ref: str, actor: ActorDep, session: SessionDep) -> list[Comment]:
-    item = _find_item(session, actor, ref)
-    return list(
-        session.exec(
-            select(Comment)
-            .where(Comment.item_id == item.id, col(Comment.deleted).is_(False))
-            .order_by(col(Comment.created_at))
-        ).all()
+class CommentRead(BaseModel):
+    id: str
+    item_id: str
+    body: str
+    created_by: str | None
+    created_at: int
+    edited: bool  # the text was changed after it was posted
+
+
+def _comment_read(session: Session, comment: Comment) -> CommentRead:
+    body_edits = session.exec(
+        select(Change).where(Change.entity == "comment", Change.entity_id == comment.id, Change.field == "body")
+    ).all()
+    return CommentRead(
+        id=comment.id,
+        item_id=comment.item_id,
+        body=comment.body,
+        created_by=comment.created_by,
+        created_at=comment.created_at,
+        edited=len(body_edits) > 1,
     )
 
 
+def _find_comment(session: Session, actor: Actor, ref: str, comment_id: str) -> Comment:
+    item = _find_item(session, actor, ref)
+    comment = session.get(Comment, comment_id)
+    if comment is None or comment.item_id != item.id or comment.deleted:
+        raise HTTPException(404, "comment not found")
+    return comment
+
+
+@router.get("/items/{ref}/comments")
+def list_comments(ref: str, actor: ActorDep, session: SessionDep) -> list[CommentRead]:
+    item = _find_item(session, actor, ref)
+    comments = session.exec(
+        select(Comment)
+        .where(Comment.item_id == item.id, col(Comment.deleted).is_(False))
+        .order_by(col(Comment.created_at))
+    ).all()
+    return [_comment_read(session, c) for c in comments]
+
+
 @router.post("/items/{ref}/comments", status_code=201)
-def add_comment(ref: str, body: CommentCreate, actor: ActorDep, session: SessionDep) -> Comment:
+def add_comment(ref: str, body: CommentCreate, actor: ActorDep, session: SessionDep) -> CommentRead:
     item = _find_item(session, actor, ref)
     comment_id = str(uuid.uuid4())
     _write(session, actor, "comment", comment_id, {"item_id": item.id, "body": body.body})
     comment = session.get(Comment, comment_id)
     assert comment is not None
-    return comment
+    return _comment_read(session, comment)
+
+
+@router.patch("/items/{ref}/comments/{comment_id}")
+def edit_comment(ref: str, comment_id: str, body: CommentCreate, actor: ActorDep, session: SessionDep) -> CommentRead:
+    """Change a comment's text (its author only)."""
+    comment = _find_comment(session, actor, ref, comment_id)
+    _write(session, actor, "comment", comment.id, {"body": body.body})
+    session.refresh(comment)
+    return _comment_read(session, comment)
+
+
+@router.delete("/items/{ref}/comments/{comment_id}", status_code=204)
+def delete_comment(ref: str, comment_id: str, actor: ActorDep, session: SessionDep) -> None:
+    """Delete a comment (its author, or the project's owner)."""
+    comment = _find_comment(session, actor, ref, comment_id)
+    _write(session, actor, "comment", comment.id, {"deleted": True})
 
 
 # --- Preferences -----------------------------------------------------------------

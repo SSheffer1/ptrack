@@ -73,6 +73,10 @@ export const httpBackend: Backend = {
 
   listComments: (ref: string) => request<Comment[]>('GET', `/items/${enc(ref)}/comments`),
   addComment: (ref: string, body: string) => request<Comment>('POST', `/items/${enc(ref)}/comments`, { body }),
+  editComment: (ref: string, commentId: string, body: string) =>
+    request<Comment>('PATCH', `/items/${enc(ref)}/comments/${enc(commentId)}`, { body }),
+  deleteComment: (ref: string, commentId: string) =>
+    request<void>('DELETE', `/items/${enc(ref)}/comments/${enc(commentId)}`),
 
   updateProject: (key: string, fields: { name?: string }) => request<Project>('PATCH', `/projects/${enc(key)}`, fields),
   deleteProject: (key: string) => request<void>('DELETE', `/projects/${enc(key)}`),

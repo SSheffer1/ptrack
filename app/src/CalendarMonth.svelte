@@ -50,7 +50,7 @@
   let latestRequest = 0
   async function load(range: { from: string; to: string }) {
     const request = ++latestRequest
-    // The status chips filter open tickets; finished ones always show, struck through.
+    // The status filter applies to open tickets; finished ones always show, struck through.
     const chosen = filters.statuses.filter((s) => s !== 'done')
     const openStatuses = chosen.length ? chosen : STATUSES.filter((s) => s !== 'done')
     const common = { ...commonFilters(), q: undefined } // no search box here, so don't apply the List's search
