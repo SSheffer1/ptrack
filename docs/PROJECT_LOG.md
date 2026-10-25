@@ -350,6 +350,7 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — Status chips replaced by a **Status dropdown** (user chose option D): `StatusFilter.svelte` (`<details>` popover with status checkboxes + "Assigned to me"; label "Status: All / To do / 4 of 5 · mine"; closes on outside tap/Escape). List: on row 2 with sort, +Project/+Ticket wrap right; Calendar/Agenda: beside the project picker. Type check clean, 36 app tests; APK built and installed. **Uncommitted** (comment edit/delete + status dropdown) — next: user checks on phone, then commit/push/deploy. Session paused at usage limit.
 - **2026-10-25** — User likes the Status dropdown; the first list item touched the +Project/+Ticket buttons (the removed chips row used to provide the spacing) → `.filters` gets `margin-bottom`. Built; phone not connected for install. Still uncommitted (comments edit/delete + status dropdown + spacing).
 - **2026-10-25** — Spacing fix installed (adb flaky again: "connection terminated"; a retry worked). User: app looks good → committed + pushed comment edit/delete, Status dropdown, filters spacing.
+- **2026-10-25** — Pushed `194fb4c` (a quoting slip truncated the first commit message; amended before pushing, so history is clean). Box: `ptrack-admin backup`, pull, rebuild: healthy, data intact.
 
 ---
 
