@@ -4,7 +4,8 @@
   import { filters, projects } from './lib/state.svelte'
 
   // `actions` = the view's own controls, shown as a second row (beside the first on wide screens).
-  let { actions }: { actions?: Snippet } = $props()
+  // `search = false` hides the search box (the calendar has no use for it).
+  let { actions, search = true }: { actions?: Snippet; search?: boolean } = $props()
 
   function toggleStatus(s: Status) {
     filters.statuses = filters.statuses.includes(s)
@@ -15,7 +16,9 @@
 
 <section class="filters">
   <div class="filters-row">
-    <input type="search" bind:value={filters.q} placeholder="Search…" aria-label="Search" />
+    {#if search}
+      <input type="search" bind:value={filters.q} placeholder="Search…" aria-label="Search" />
+    {/if}
     <select bind:value={filters.project} aria-label="Project">
       <option value="">All projects</option>
       {#each projects.list as p (p.id)}

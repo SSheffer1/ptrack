@@ -542,8 +542,25 @@ label > textarea {
 
 /* --- Calendar ---------------------------------------------------------------- */
 
+/* ‹ October 2026 › above the month grid. */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.month-nav button {
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.3rem 0.75rem;
+}
+
 .month-title {
-  margin: 0.25rem 0 0.75rem;
+  margin: 0;
+  min-width: 10.5rem;
+  text-align: center;
   font-size: 1.15rem;
 }
 

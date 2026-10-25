@@ -16,7 +16,8 @@
   $effect(() => {
     void runtime.dataVersion // also refresh after a sync
     const request = ++latestRequest
-    api.listItems({ ...commonFilters(), status: [...filters.statuses] }).then(
+    // No search box on the agenda, so the List's search text doesn't apply here.
+    api.listItems({ ...commonFilters(), q: undefined, status: [...filters.statuses] }).then(
       (result) => {
         if (request === latestRequest) {
           items = result
@@ -54,7 +55,7 @@
   })
 </script>
 
-<Filters />
+<Filters search={false} />
 
 {#if error}<p class="error">{error}</p>{/if}
 

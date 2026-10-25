@@ -53,7 +53,7 @@
     // The status chips filter open tickets; finished ones always show, struck through.
     const chosen = filters.statuses.filter((s) => s !== 'done')
     const openStatuses = chosen.length ? chosen : STATUSES.filter((s) => s !== 'done')
-    const common = commonFilters()
+    const common = { ...commonFilters(), q: undefined } // no search box here, so don't apply the List's search
     try {
       const [open, done] = await Promise.all([
         api.listItems({ ...common, status: openStatuses, due_from: range.from, due_to: range.to }),
@@ -79,16 +79,13 @@
   }
 </script>
 
-<Filters>
-  {#snippet actions()}
-    <div class="spacer"></div>
-    <button onclick={() => shift(-1)} aria-label="Previous month">‹</button>
-    <button onclick={() => (month = new Date(now.getFullYear(), now.getMonth(), 1))}>Today</button>
-    <button onclick={() => shift(1)} aria-label="Next month">›</button>
-  {/snippet}
-</Filters>
+<Filters search={false} />
 
-<h2 class="month-title">{month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h2>
+<div class="month-nav">
+  <button onclick={() => shift(-1)} aria-label="Previous month">‹</button>
+  <h2 class="month-title">{month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h2>
+  <button onclick={() => shift(1)} aria-label="Next month">›</button>
+</div>
 
 {#if addingOn}
   <NewTicket
