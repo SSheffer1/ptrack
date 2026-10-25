@@ -7,7 +7,7 @@
   import SyncBadge from './SyncBadge.svelte'
   import TicketDetail from './TicketDetail.svelte'
   import TicketList from './TicketList.svelte'
-  import { init, runtime } from './lib/runtime.svelte'
+  import { init, refreshNow, runtime } from './lib/runtime.svelte'
   import { loadPrefs, loadProjects, loadUsers } from './lib/state.svelte'
 
   // Routing via the part of the URL after '#':
@@ -52,9 +52,15 @@
     <a href="#/projects" class:active={view === 'projects'}>Projects</a>
   </nav>
   <div class="spacer"></div>
-  <a href="#/settings" class="settings-link" class:active={view === 'settings'} aria-label="Settings">
-    <SyncBadge />
-  </a>
+  {#if runtime.me}
+    <div class="top-actions">
+      <SyncBadge />
+      <button onclick={refreshNow} disabled={runtime.sync.syncing} title="Sync with the server now">
+        <span class:spinning={runtime.sync.syncing}>↻</span> Sync now
+      </button>
+      <a href="#/settings" class="button" class:active={view === 'settings'}>⚙ Settings</a>
+    </div>
+  {/if}
 </header>
 
 <main>

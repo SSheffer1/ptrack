@@ -79,6 +79,16 @@
     </label>
   </div>
 
+  <label>
+    <span>Sync in the background {@render reset('sync_minutes')}</span>
+    <select value={prefs.sync_minutes} onchange={(e) => set('sync_minutes', Number(e.currentTarget.value))}>
+      {#each [1, 5, 15, 30, 60] as m (m)}
+        <option value={m}>every {m === 60 ? 'hour' : m === 1 ? 'minute' : `${m} minutes`}</option>
+      {/each}
+      <option value={0}>never (only after edits, on opening the app, and with Sync now)</option>
+    </select>
+  </label>
+
   <div class="field">
     <span>Statuses shown when the app opens {@render reset('default_statuses')}</span>
     <div class="chips">

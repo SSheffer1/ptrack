@@ -613,8 +613,48 @@ nav a.active {
 
 /* --- Sync badge + settings ---------------------------------------------------- */
 
-.settings-link {
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.8rem;
+}
+
+.top-actions button,
+.top-actions a.button {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+}
+
+/* A link styled like the buttons. */
+a.button {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+a.button:hover,
+a.button.active {
+  border-color: var(--muted);
+}
+
+.spinning {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .top-actions .badge-text {
+    display: none; /* just the colored dot on phones; Settings shows the details */
+  }
 }
 
 .sync-badge {

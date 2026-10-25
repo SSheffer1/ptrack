@@ -9,7 +9,7 @@ def test_set_and_reset_preferences(client):
 
 
 def test_bad_preferences_are_rejected(client):
-    for body in [{"week_start": "friday"}, {"untimed_hour": 25}, {"soon_days": -1}, {"nonsense": 1},
+    for body in [{"week_start": "friday"}, {"untimed_hour": 25}, {"soon_days": -1}, {"nonsense": 1}, {"sync_minutes": -5},
                  {"reminders_untimed": ["soon"]}, {"default_statuses": ["nope"]}]:
         assert client.patch("/me/prefs", json=body).status_code == 400, body
 

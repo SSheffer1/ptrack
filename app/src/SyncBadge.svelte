@@ -24,5 +24,5 @@
 </script>
 
 <span class="sync-badge {tone}" title={s.error || 'Sync settings'}>
-  <span class="dot"></span>{text}
+  <span class="dot"></span><span class="badge-text">{text}</span>
 </span>

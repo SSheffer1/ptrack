@@ -13,6 +13,7 @@ export interface Prefs {
   soon_days: number // due dates turn orange this many days ahead
   default_statuses: Status[] // shown when the app opens
   default_sort: SortOrder
+  sync_minutes: number // background sync on offline-first devices (the phone app); 0 = never
 }
 
 export const PREF_DEFAULTS: Prefs = {
@@ -23,6 +24,7 @@ export const PREF_DEFAULTS: Prefs = {
   soon_days: 2,
   default_statuses: ['backlog', 'todo', 'in_progress', 'blocked'],
   default_sort: 'created',
+  sync_minutes: 5,
 }
 
 /** What's in effect: your settings over the defaults. */

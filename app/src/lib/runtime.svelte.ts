@@ -20,11 +20,11 @@ import { loadState, saveState } from './local/persist'
 import { LocalStore } from './local/store'
 import { fetchTransport, initialStatus, type People, SyncEngine, type SyncSettings } from './local/sync'
 import { openTicketOnTap, scheduleReminders } from './notify'
+import { prefs } from './prefs.svelte'
 import type { Backend, User } from './types'
 
 const LOCAL_FLAG = 'ptrack.offlineMode' // browser-only testing switch, kept in localStorage
 const SESSION_KEY = 'ptrack.session' // browser online mode: { token, me }
-const SYNC_EVERY_MS = 30_000
 const SYNC_AFTER_EDIT_MS = 1_000
 const SAVE_AFTER_EDIT_MS = 300
 const RESCHEDULE_AFTER_MS = 2_000
@@ -161,7 +161,16 @@ export async function init() {
     )
     if (!saved) scheduleSave()
     syncNow()
-    setInterval(syncNow, SYNC_EVERY_MS)
+    // Background sync every `sync_minutes` (your preference; 0 = never). Edits,
+    // reopening the app and the Sync now button sync right away regardless.
+    $effect.root(() => {
+      $effect(() => {
+        const minutes = prefs.sync_minutes
+        if (!minutes) return
+        const timer = setInterval(syncNow, minutes * 60_000)
+        return () => clearInterval(timer)
+      })
+    })
     if (runtime.native) {
       CapApp.addListener('resume', syncNow)
       openTicketOnTap()
@@ -181,6 +190,12 @@ export async function init() {
 export function syncNow() {
   if (!engine || !runtime.me || (runtime.native && !runtime.serverUrl)) return
   engine.sync()
+}
+
+/** The "Sync now" button: sync in offline-first mode; in online mode, just fetch fresh data. */
+export function refreshNow() {
+  if (engine) syncNow()
+  else runtime.dataVersion++
 }
 
 function normalizeUrl(url: string): string {

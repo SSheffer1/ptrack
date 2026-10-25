@@ -26,9 +26,10 @@ PREFS: dict[str, Any] = {
     "soon_days": int,  # due dates turn orange this many days ahead (0–14)
     "default_statuses": list[Status],  # statuses shown when the app opens
     "default_sort": Literal["created", "due", "completed"],
+    "sync_minutes": int,  # background sync interval on offline-first devices; 0 = never (0–1440)
 }
 
-RANGES = {"untimed_hour": (0, 23), "soon_days": (0, 14)}
+RANGES = {"untimed_hour": (0, 23), "soon_days": (0, 14), "sync_minutes": (0, 1440)}
 
 
 def scope(user_id: str) -> str:

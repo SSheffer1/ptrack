@@ -49,6 +49,7 @@ that uses them: `app/src/lib/prefs.svelte.ts`. The server checks and stores them
 | Due dates turn orange | 2 days ahead | list, agenda, calendar, ticket page |
 | Statuses shown when the app opens | all except Done | the status chips' starting state |
 | List sorted by | Newest last | the List view's starting sort |
+| Sync in the background | every 5 minutes | the phone app (offline-first devices); "never" leaves syncing to edits, opening the app, and Sync now |
 
 Per device (not synced): the **server address**, entered when signing in on the
 phone, and the browser-only **offline-first test mode** switch.
@@ -102,7 +103,7 @@ phone, and the browser-only **offline-first test mode** switch.
 
 | Behavior | Value | Where |
 |---|---|---|
-| Sync | on start, every 30 s, 1 s after an edit, when you switch back to the app | `app/src/lib/runtime.svelte.ts` `SYNC_*` |
+| Sync | on start, 1 s after an edit, when you switch back to the app, with the Sync now button, and in the background per your preference | `app/src/lib/runtime.svelte.ts` |
 | Save to the phone's storage | 300 ms after an edit | same, `SAVE_AFTER_EDIT_MS` |
 | Re-plan reminders | 2 s after any change | same, `RESCHEDULE_AFTER_MS` |
 | Conflicts | latest edit wins, per field | both: `server/src/ptrack/sync.py`, `app/src/lib/local/store.ts` |
