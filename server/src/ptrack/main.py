@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="ptrack", lifespan=lifespan)
+app = FastAPI(title="PTrack", lifespan=lifespan)
 app.include_router(public_router, prefix="/api")  # sign in
 signed_in = [Depends(current_actor)]  # everything else needs a signed-in user
 app.include_router(auth_router, prefix="/api", dependencies=signed_in)

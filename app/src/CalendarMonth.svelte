@@ -81,6 +81,7 @@
 
 <Filters>
   {#snippet actions()}
+    <div class="spacer"></div>
     <button onclick={() => shift(-1)} aria-label="Previous month">‹</button>
     <button onclick={() => (month = new Date(now.getFullYear(), now.getMonth(), 1))}>Today</button>
     <button onclick={() => shift(1)} aria-label="Next month">›</button>

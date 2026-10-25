@@ -43,23 +43,28 @@
 
 <svelte:window onhashchange={() => (hash = location.hash)} />
 
+<!-- Two rows: the ribbon (name, sync, settings), then the tabs. -->
 <header class="topbar">
-  <a href="#/" class="brand">ptrack</a>
-  <nav>
-    <a href="#/" class:active={view === 'list'}>List</a>
-    <a href="#/calendar" class:active={view === 'calendar'}>Calendar</a>
-    <a href="#/agenda" class:active={view === 'agenda'}>Agenda</a>
-    <a href="#/projects" class:active={view === 'projects'}>Projects</a>
-  </nav>
-  <div class="spacer"></div>
-  {#if runtime.me}
-    <div class="top-actions">
+  <div class="ribbon">
+    <a href="#/" class="brand">PTrack</a>
+    <div class="spacer"></div>
+    {#if runtime.me}
       <SyncBadge />
       <button onclick={refreshNow} disabled={runtime.sync.syncing} title="Sync with the server now">
         <span class:spinning={runtime.sync.syncing}>↻</span> Sync now
       </button>
-      <a href="#/settings" class="button" class:active={view === 'settings'}>⚙ Settings</a>
-    </div>
+      <a href="#/settings" class="button gear" class:active={view === 'settings'} aria-label="Settings" title="Settings"
+        >⚙&#xFE0E;</a
+      >
+    {/if}
+  </div>
+  {#if runtime.me}
+    <nav class="tabs">
+      <a href="#/" class:active={view === 'list'}>List</a>
+      <a href="#/calendar" class:active={view === 'calendar'}>Calendar</a>
+      <a href="#/agenda" class:active={view === 'agenda'}>Agenda</a>
+      <a href="#/projects" class:active={view === 'projects'}>Projects</a>
+    </nav>
   {/if}
 </header>
 

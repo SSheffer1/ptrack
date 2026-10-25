@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PTrack launcher icon foreground: a P-trap with a mouse peeking out of a hole in its bend.
+     The background colour is @color/ic_launcher_background.
+     Same drawing as app/icon/*.svg (24x24 units), scaled 3x into the middle 72x72 of the
+     108x108 adaptive-icon canvas; launchers crop that middle into their own shape. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:scaleX="3" android:scaleY="3" android:translateX="18" android:translateY="18">
+        <!-- Tailpiece, J-bend and trap arm. -->
+        <path android:pathData="M6,-7V12.5A6,6 0,0 0,18 12.5V9.2a3,3 0,0 1,3 -3H31"
+            android:strokeColor="#FFFFFF" android:strokeLineJoin="round" android:strokeWidth="4.6" />
+        <!-- Slip nuts. -->
+        <path android:fillColor="#FFFFFF" android:pathData="M3.5,8.4H8.5A0.6,0.6 0,0 1,9.1,9.0V10A0.6,0.6 0,0 1,8.5,10.6H3.5A0.6,0.6 0,0 1,2.9,10V9.0A0.6,0.6 0,0 1,3.5,8.4Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M15.5,9.6H20.5A0.6,0.6 0,0 1,21.1,10.2V11.2A0.6,0.6 0,0 1,20.5,11.8H15.5A0.6,0.6 0,0 1,14.9,11.2V10.2A0.6,0.6 0,0 1,15.5,9.6Z" />
+        <!-- Jagged hole and the mouse's face: scaled 1.2x about (12,18.5), moved along the bend. -->
+        <group android:pivotX="12" android:pivotY="18.5" android:scaleX="1.2" android:scaleY="1.2" android:translateX="2.54" android:translateY="-0.56">
+            <path android:fillColor="#111114" android:pathData="M14.53 18.95L13.63 19.38L13.49 20.09L12.43 19.89L11.62 20.59L10.96 19.94L10.17 19.67L10.27 19.02L9.42 18.44L10.35 18.01L10.54 17.33L11.58 17.55L12.37 16.85L13.01 17.49L13.87 17.70L13.78 18.38Z" />
+            <group android:rotation="-25" android:pivotX="10.15" android:pivotY="16.6"><path android:fillColor="#FFFFFF" android:strokeColor="#111114" android:strokeWidth="0.35" android:pathData="M9.10,16.6a1.05,1.2 0,1 0,2.10,0a1.05,1.2 0,1 0,-2.10,0Z" /></group>
+            <group android:rotation="25" android:pivotX="13.85" android:pivotY="16.6"><path android:fillColor="#FFFFFF" android:strokeColor="#111114" android:strokeWidth="0.35" android:pathData="M12.80,16.6a1.05,1.2 0,1 0,2.10,0a1.05,1.2 0,1 0,-2.10,0Z" /></group>
+            <path android:fillColor="#FFFFFF" android:strokeColor="#111114" android:strokeWidth="0.35" android:strokeLineJoin="round"
+                android:pathData="M10.3,17.2C10.6,16.4 13.4,16.4 13.7,17.2C13.9,17.9 12.9,19.8 12,20.1C11.1,19.8 10.1,17.9 10.3,17.2Z" />
+            <group android:rotation="-25" android:pivotX="10.15" android:pivotY="16.6"><path android:fillColor="#F2A7B8" android:pathData="M9.65,16.6a0.5,0.65 0,1 0,1.00,0a0.5,0.65 0,1 0,-1.00,0Z" /></group>
+            <group android:rotation="25" android:pivotX="13.85" android:pivotY="16.6"><path android:fillColor="#F2A7B8" android:pathData="M13.35,16.6a0.5,0.65 0,1 0,1.00,0a0.5,0.65 0,1 0,-1.00,0Z" /></group>
+            <path android:fillColor="#111114" android:pathData="M11.08,17.75a0.27,0.27 0,1 0,0.54,0a0.27,0.27 0,1 0,-0.54,0Z" />
+            <path android:fillColor="#111114" android:pathData="M12.38,17.75a0.27,0.27 0,1 0,0.54,0a0.27,0.27 0,1 0,-0.54,0Z" />
+            <path android:fillColor="#F27AA0" android:pathData="M11.70,19.75a0.3,0.3 0,1 0,0.60,0a0.3,0.3 0,1 0,-0.60,0Z" />
+            <path android:strokeColor="#111114" android:strokeWidth="0.12" android:strokeLineCap="round"
+                android:pathData="M11.4,19.4L9.9,19.1M11.4,19.6L10,19.8M12.6,19.4L14.1,19.1M12.6,19.6L14,19.8" />
+        </group>
+    </group>
+</vector>

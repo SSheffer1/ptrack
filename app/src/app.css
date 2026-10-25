@@ -191,40 +191,62 @@ label > textarea {
 /* --- Layout pieces ----------------------------------------------------------- */
 
 .topbar {
-  display: flex;
-  flex-wrap: wrap; /* the nav drops below the brand on narrow phones */
-  gap: 0.25rem 0;
-  align-items: center;
-  padding: 0.6rem 1rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 
+/* Row 1: name on the left, sync status + buttons on the right. Never wraps. */
+.ribbon {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+
+.ribbon button,
+.ribbon a.button {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+}
+
+/* Settings: just a large gear. (FE0E in the markup asks for the plain, non-emoji glyph.) */
+.ribbon a.button.gear {
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.2rem 0.45rem;
+}
+
 .brand {
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  margin-right: 1.25rem;
 }
 
-nav {
+/* Row 2: the tabs. Scrolls sideways if it doesn't fit, instead of wrapping. */
+.tabs {
   display: flex;
   gap: 0.25rem;
+  padding: 0 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-nav a {
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius);
+.tabs a {
+  padding: 0.45rem 0.75rem;
   color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 
-nav a:hover {
+.tabs a:hover {
   color: var(--text);
 }
 
-nav a.active {
+.tabs a.active {
   color: var(--text);
-  background: var(--bg);
   font-weight: 600;
+  border-bottom-color: var(--accent);
 }
 
 .toolbar {
@@ -245,6 +267,41 @@ nav a.active {
 
 .spacer {
   flex: 1 0 0;
+}
+
+/* Filters above the list, calendar and agenda: search + project on one row,
+   the view's own controls on a second row; side by side on wide screens. */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filters-row input[type='search'] {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.filters-row select {
+  width: auto;
+  min-width: 0;
+  max-width: 50%;
+}
+
+@media (min-width: 760px) {
+  .filters {
+    flex-direction: row;
+  }
+  .filters-row:first-child {
+    flex: 1;
+  }
 }
 
 .panel {
@@ -613,19 +670,6 @@ nav a.active {
 
 /* --- Sync badge + settings ---------------------------------------------------- */
 
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-}
-
-.top-actions button,
-.top-actions a.button {
-  font-size: 0.8rem;
-  padding: 0.25rem 0.6rem;
-}
-
 /* A link styled like the buttons. */
 a.button {
   display: inline-block;
@@ -652,7 +696,7 @@ a.button.active {
 }
 
 @media (max-width: 600px) {
-  .top-actions .badge-text {
+  .ribbon .badge-text {
     display: none; /* just the colored dot on phones; Settings shows the details */
   }
 }

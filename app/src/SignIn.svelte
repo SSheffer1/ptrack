@@ -23,7 +23,7 @@
 </script>
 
 <form class="panel sign-in" onsubmit={submit}>
-  <h2>Sign in to ptrack</h2>
+  <h2>Sign in to PTrack</h2>
   {#if runtime.native}
     <label>
       Server address
@@ -42,5 +42,5 @@
   <div class="actions">
     <button type="submit" class="primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
   </div>
-  <p class="hint">No account? Ask whoever runs your ptrack server to create one.</p>
+  <p class="hint">No account? Ask whoever runs your PTrack server to create one.</p>
 </form>

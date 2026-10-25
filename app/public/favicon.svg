@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <clipPath id="c"><rect width="24" height="24" rx="5"/></clipPath>
+  <g clip-path="url(#c)">
+  <rect width="24" height="24" fill="#3b5bdb"/>
+  <!-- Browser tab: thicker pipe and the hole; the mouse is too small to read at 16 px. -->
+  <path d="M6 -2V12.5A6 6 0 0 0 18 12.5V9.2a3 3 0 0 1 3 -3H26" fill="none" stroke="#ffffff" stroke-width="5.4" stroke-linejoin="round"/>
+  <g transform="translate(14.54 17.94) scale(1.2) translate(-12 -18.5)"><path d="M14.53 18.95L13.63 19.38L13.49 20.09L12.43 19.89L11.62 20.59L10.96 19.94L10.17 19.67L10.27 19.02L9.42 18.44L10.35 18.01L10.54 17.33L11.58 17.55L12.37 16.85L13.01 17.49L13.87 17.70L13.78 18.38Z" fill="#111114"/></g>
+  </g>
+</svg>

@@ -1,10 +1,8 @@
-# ptrack
+# PTrack
 
 **A self-hosted issue tracker for your life.** Track homework, chores and projects as
 tickets, see their due dates on a calendar, and get reminded on your phone, with an
 Android app that works offline and syncs to a server you run at home.
-
-> "ptrack" is a working name.
 
 ## Features
 
@@ -34,7 +32,7 @@ Android app that works offline and syncs to a server you run at home.
    own copy of the data                  │
    └── syncs ────────────┐               │
                          ▼               ▼
-              ptrack server (FastAPI + SQLite) on your home server
+              PTrack server (FastAPI + SQLite) on your home server
 ```
 
 Every edit is stored as a small change ("set the status of HOME-12 to Done at 14:02, from
@@ -112,6 +110,9 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 In the app, sign in with your server's address, e.g. `http://192.168.1.20:8000` for the dev server.
 
+The icon's sources are in `app/icon/`; after changing them, `bash app/icon/build.sh`
+renders every size (needs `resvg`).
+
 More detail: [server/README.md](server/README.md) (migrations, admin commands) and
 [docs/CONFIGURATION.md](docs/CONFIGURATION.md) (every adjustable setting and where it lives).
 
@@ -119,7 +120,7 @@ More detail: [server/README.md](server/README.md) (migrations, admin commands) a
 
 Copyright © 2026 SSheffer1
 
-ptrack is free software: you can redistribute it and/or modify it under the terms of the
+PTrack is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License as published by the Free Software Foundation, either version 3
 of the License, or (at your option) any later version. It is distributed in the hope that
 it will be useful, but WITHOUT ANY WARRANTY; see [LICENSE](LICENSE) for details.

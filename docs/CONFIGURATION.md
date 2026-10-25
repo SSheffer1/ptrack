@@ -113,6 +113,6 @@ phone, and the browser-only **offline-first test mode** switch.
 | Behavior | Value | Where |
 |---|---|---|
 | App id / name | `io.github.ssheffer1.ptrack` / ptrack | `app/capacitor.config.ts` |
-| Icon | Capacitor default | `app/android/app/src/main/res/mipmap-*` |
+| Icon | the P-trap with a mouse, on #3b5bdb | sources in `app/icon/` (`build.sh` renders the PNGs); adaptive icon: `app/android/app/src/main/res/drawable/ic_launcher_foreground.xml` |
 | Plain HTTP allowed | yes, until the server has HTTPS | `app/android/app/src/main/AndroidManifest.xml` `usesCleartextTraffic` |
 | Android versions | 7.0 (SDK 24) and up, targets 16 (SDK 36) | `app/android/variables.gradle` |
