@@ -337,6 +337,7 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — User confirmed the icon works on the phone. Committed + pushed `6a44b86` (name, header, filters, icon; scan clean). Box: backup, pull, rebuild: healthy in ~30 s, data intact; serves title "PTrack", favicon.svg and apple-touch-icon.png.
 - **2026-10-25** — Calendar: removed the search box (`Filters search={false}`; the calendar also ignores the List's search text) and the ‹ Today › row; arrows now flank the month name ("‹ October 2026 ›"), no Today button. Type check clean; installed on the phone. Phone was locked, so no screenshot check (don't try to drive a locked phone).
 - **2026-10-25** — Agenda: search box removed too (`search={false}`, ignores the List's search text). Slip: an inline comment swallowed `.then(`; svelte-check caught it but `check | grep` doesn't fail a chain, so a stale APK was rebuilt and installed (harmless, previous version). Fixed; build/install now runs under `bash -euo pipefail` with the type check gating everything. Installed on the phone.
+- **2026-10-25** — Committed + pushed `cb5d79e` (calendar/agenda without search; month arrows by the title). Box: backup, pull, rebuild: healthy in ~30 s, data intact.
 
 ---
 
