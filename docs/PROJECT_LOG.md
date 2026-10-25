@@ -354,6 +354,7 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — User noticed the new-ticket form had no description field → added an optional Description textarea under the title (the API already accepted `body`). Built; phone not reachable over adb (also downloadable from the laptop dev server at /ptrack.apk). Uncommitted.
 - **2026-10-25** — Same spacing issue on the Projects tab (header row touching the list) → `.toolbar` gets the same `margin-bottom` as `.filters`. Built; uncommitted.
 - **2026-10-25** — Description placeholders now match ("Notes, links, steps…" on both the new-ticket form and the ticket page); removed remaining Markdown mentions (README feature list, a model comment) per D-045.
+- **2026-10-25** — Pushed `0ee0ff6` (new-ticket description, Projects spacing, placeholders). Box: backup, pull, rebuild: healthy, data intact.
 
 ---
 
