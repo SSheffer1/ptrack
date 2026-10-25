@@ -1,0 +1,29 @@
+# ptrack on a home server: the app behind Caddy.
+#   docker compose -f deploy/compose.yaml up -d --build
+# Only Caddy publishes ports. Docker-published ports bypass ufw, so ptrack itself
+# stays on the internal network where only Caddy can reach it.
+
+services:
+  ptrack:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: ptrack
+    restart: unless-stopped
+    volumes:
+      - ptrack-data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - ptrack
+
+volumes:
+  ptrack-data:
+  caddy-data:

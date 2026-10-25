@@ -23,8 +23,9 @@ Android app that works offline and syncs to a server you run at home.
   sync when it reaches the server again.
 - **Your data, your server.** One small Python server and a single SQLite file. No accounts
   anywhere else, nothing sent to third parties.
-- **Family sharing** *(in progress)*. Accounts for family members, shared projects with
-  owners and editors, and tickets assigned to each other.
+- **Family sharing.** Accounts for family members, shared projects with owners and
+  editors, tickets assigned to each other, and each person's reminders on their own phone.
+- **Your preferences.** Default reminders, week start and more, synced to all your devices.
 
 ## How it works
 
@@ -46,13 +47,41 @@ decisions behind this.
 |---|---|
 | `server/` | Python API and sync server: FastAPI, SQLModel, SQLite, Alembic migrations |
 | `app/` | Svelte 5 + TypeScript web app, packaged for Android with Capacitor |
+| `deploy/` | Docker setup for a home server: the ptrack image and Caddy in front of it |
 | `docs/` | Design log and the list of every adjustable setting |
 
 ## Status
 
-Early, and working. In daily use on one Android phone and a Linux desktop. The first
-release (v1.0) will add family accounts, HTTPS and a one-command Docker setup for a home
-server. Until then, setup is the development setup below.
+Early, and working: in testing on a home server with Android and iPhone users. Before the
+first release (v1.0): HTTPS and automatic backups.
+
+## Self-hosting
+
+On any Linux machine with [Docker](https://docs.docker.com/engine/install/) and the
+Compose plugin:
+
+```bash
+git clone https://github.com/SSheffer1/ptrack.git
+cd ptrack
+docker compose -f deploy/compose.yaml up -d --build
+
+# Create the first account (asks for a password):
+docker compose -f deploy/compose.yaml exec ptrack ptrack-admin create-user yourname --admin
+```
+
+Then open `http://<server-address>` in a browser and sign in. Other accounts can be added
+in the app (Settings → Family accounts) or with `ptrack-admin`; see
+[server/COMMANDS.md](server/COMMANDS.md).
+
+- Data lives in the Docker volume `deploy_ptrack-data` and survives rebuilds.
+- Updating: `git pull && docker compose -f deploy/compose.yaml up -d --build`.
+- Server settings for the container: [deploy/ptrack.toml](deploy/ptrack.toml).
+- For now this serves plain HTTP on port 80, meant for a home network. Don't expose it to
+  the internet until HTTPS is in place.
+
+The Android app: build it as described below, or download `ptrack.apk` from a GitHub
+release once there is one. In the app, sign in with your server's address
+(e.g. `http://192.168.1.20`).
 
 ## Development setup
 
@@ -81,7 +110,7 @@ npm run build && npx cap sync android
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-In the app, open Settings and enter your server's address, e.g. `http://192.168.1.20:8000`.
+In the app, sign in with your server's address, e.g. `http://192.168.1.20:8000` for the dev server.
 
 More detail: [server/README.md](server/README.md) (migrations, admin commands) and
 [docs/CONFIGURATION.md](docs/CONFIGURATION.md) (every adjustable setting and where it lives).

@@ -1,0 +1,10 @@
+# Settings for the Docker deployment (baked into the image as /etc/ptrack.toml).
+# Every setting is explained in server/ptrack.example.toml and docs/CONFIGURATION.md.
+
+[server]
+host = "0.0.0.0"               # inside the container; only Caddy can reach it
+port = 8000
+static_dir = "/web"            # the web app built into the image
+
+[database]
+url = "sqlite:////data/ptrack.db"  # /data is the ptrack-data volume

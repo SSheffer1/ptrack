@@ -1,0 +1,11 @@
+# Keep the image build small and free of local data.
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.db
+**/ptrack.toml
+!deploy/ptrack.toml
+app/dist
+app/android
+.git
+CLAUDE.local.md

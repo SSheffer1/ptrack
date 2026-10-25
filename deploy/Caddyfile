@@ -1,0 +1,5 @@
+# Caddy sits in front of ptrack and passes every request through to it.
+# Home network only, plain HTTP for now.
+:80 {
+	reverse_proxy ptrack:8000
+}

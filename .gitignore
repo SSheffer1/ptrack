@@ -17,7 +17,7 @@ build/
 local.properties
 
 # Local data and secrets
-ptrack.toml
+/server/ptrack.toml
 *.db
 *.db-journal
 *.sqlite3

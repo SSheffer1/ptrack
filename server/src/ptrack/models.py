@@ -68,7 +68,7 @@ class DeviceToken(SQLModel, table=True):
     id: str = Field(primary_key=True)
     user_id: str = Field(index=True)
     token_hash: str = Field(unique=True, index=True)
-    name: str = ""  # e.g. "Android phone" or "Firefox on Linux"
+    name: str = ""  # e.g. "Android app" or "Browser"
     created_at: int = 0
     last_used_at: int = 0
     revoked: bool = False

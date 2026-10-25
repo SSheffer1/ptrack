@@ -63,3 +63,16 @@ Then read the generated file in `src/ptrack/migrations/versions/` and run the te
 
 The app's end-to-end test drives two "phones" against a real server; see the
 comment at the top of `app/src/lib/local/sync.e2e.test.ts`.
+
+## Docker (home server)
+
+From the repo root, on the server. `C="docker compose -f deploy/compose.yaml"` saves typing.
+
+| Command | What it does |
+|---|---|
+| `$C up -d --build` | Build and start (or update after `git pull`). Data is kept. |
+| `$C ps` | Is it running and healthy? |
+| `$C logs -f ptrack` | Server log (Ctrl+C to stop following). |
+| `$C exec ptrack ptrack-admin <command>` | Any `ptrack-admin` command above, inside the container. |
+| `$C restart ptrack` | Restart the server. |
+| `$C down` | Stop everything (data stays in the `deploy_ptrack-data` volume). |
