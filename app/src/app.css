@@ -281,6 +281,7 @@ label > textarea {
 
 .filters-row {
   display: flex;
+  flex-wrap: wrap; /* never wider than the screen */
   align-items: center;
   gap: 0.5rem;
 }
@@ -984,6 +985,7 @@ button.link.danger-link {
   top: calc(100% + 4px);
   left: 0;
   min-width: 13rem;
+  max-width: calc(100vw - 16px); /* lib/popover.ts moves it left if it would overflow */
   display: flex;
   flex-direction: column;
   padding: 0.4rem;

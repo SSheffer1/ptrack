@@ -1,8 +1,10 @@
 <script lang="ts">
   import { filters, projects } from './lib/state.svelte'
+  import { keepOnScreen } from './lib/popover'
 
   // A checklist of projects, like the Status dropdown. Nothing ticked shows every project.
   let panel = $state<HTMLDetailsElement>()
+  let list = $state<HTMLDivElement>()
 
   // Only keys of projects that still exist count (one may have been deleted since it was ticked).
   const chosen = $derived(projects.list.filter((p) => filters.projects.includes(p.key)))
@@ -25,9 +27,9 @@
 
 <svelte:window onclick={closeIfOutside} onkeydown={(e) => e.key === 'Escape' && panel && (panel.open = false)} />
 
-<details class="pick-filter" bind:this={panel}>
+<details class="pick-filter" bind:this={panel} ontoggle={() => panel?.open && keepOnScreen(list)}>
   <summary>{label} <span aria-hidden="true">▾</span></summary>
-  <div class="pick-panel" role="group" aria-label="Show projects">
+  <div class="pick-panel" bind:this={list} role="group" aria-label="Show projects">
     {#each projects.list as p (p.id)}
       <label class="pick-option">
         <input type="checkbox" checked={filters.projects.includes(p.key)} onchange={() => toggle(p.key)} />

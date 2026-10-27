@@ -1,10 +1,12 @@
 <script lang="ts">
   import { STATUS_LABELS, STATUSES, type Status } from './lib/api'
   import { filters } from './lib/state.svelte'
+  import { keepOnScreen } from './lib/popover'
 
   // One button that opens a checklist of statuses (plus "Assigned to me").
   // <details> does the opening and closing; a tap outside or Escape closes it too.
   let panel = $state<HTMLDetailsElement>()
+  let list = $state<HTMLDivElement>()
 
   // Nothing ticked shows everything, same as everything ticked.
   const label = $derived.by(() => {
@@ -26,9 +28,9 @@
 
 <svelte:window onclick={closeIfOutside} onkeydown={(e) => e.key === 'Escape' && panel && (panel.open = false)} />
 
-<details class="pick-filter" bind:this={panel}>
+<details class="pick-filter" bind:this={panel} ontoggle={() => panel?.open && keepOnScreen(list)}>
   <summary>{label} <span aria-hidden="true">▾</span></summary>
-  <div class="pick-panel" role="group" aria-label="Show statuses">
+  <div class="pick-panel" bind:this={list} role="group" aria-label="Show statuses">
     {#each STATUSES as s (s)}
       <label class="pick-option">
         <input type="checkbox" checked={filters.statuses.includes(s)} onchange={() => toggle(s)} />
