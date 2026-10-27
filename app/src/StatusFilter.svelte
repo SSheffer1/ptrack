@@ -29,7 +29,7 @@
 <svelte:window onclick={closeIfOutside} onkeydown={(e) => e.key === 'Escape' && panel && (panel.open = false)} />
 
 <details class="pick-filter" bind:this={panel} ontoggle={() => panel?.open && keepOnScreen(list)}>
-  <summary>{label} <span aria-hidden="true">▾</span></summary>
+  <summary><span class="pick-label">{label}</span> <span aria-hidden="true">▾</span></summary>
   <div class="pick-panel" bind:this={list} role="group" aria-label="Show statuses">
     {#each STATUSES as s (s)}
       <label class="pick-option">

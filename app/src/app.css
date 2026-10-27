@@ -298,13 +298,29 @@ label > textarea {
   max-width: 50%;
 }
 
-@media (min-width: 760px) {
-  .filters {
-    flex-direction: row;
-  }
-  .filters-row:first-child {
-    flex: 1;
-  }
+/* Rows 2 and 3 of the filters: four equal columns, so edges line up between rows.
+   Project and status dropdowns take two columns each, whatever their labels say. */
+.filters-row.grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch; /* same height for pickers and buttons */
+}
+
+.pickers .pick-filter {
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.pickers .pick-filter summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.pick-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis; /* a long label ends in "…" instead of widening the button */
 }
 
 .panel {
@@ -950,14 +966,16 @@ button.link.danger-link {
 
 /* --- Status dropdown (StatusFilter.svelte) ---------------------------------------- */
 
-.filters-row.wrap {
-  flex-wrap: wrap;
+/* The List's sort picker (two columns) and its two add buttons (one each). */
+.filters-row .sort {
+  grid-column: span 2;
+  width: 100%;
+  max-width: none;
 }
 
-.row-end {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: auto;
+.filters-row .add {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .pick-filter {

@@ -37,16 +37,14 @@
 
 <Filters>
   {#snippet actions()}
-    <select bind:value={filters.sort} aria-label="Sort">
+    <!-- Sort takes half the row, the two buttons a quarter each (app.css .grid4). -->
+    <select class="sort" bind:value={filters.sort} aria-label="Sort">
       {#each Object.entries(SORT_LABELS) as [value, label] (value)}
         <option value={value as SortOrder}>{label}</option>
       {/each}
     </select>
-    <!-- Pushed right; drops to its own line when the row is full. -->
-    <div class="row-end">
-      <button onclick={() => (adding = 'project')}>+ Project</button>
-      <button class="primary" onclick={() => (adding = 'ticket')} disabled={projects.list.length === 0}>+ Ticket</button>
-    </div>
+    <button class="add" onclick={() => (adding = 'project')}>+ Project</button>
+    <button class="add primary" onclick={() => (adding = 'ticket')} disabled={projects.list.length === 0}>+ Ticket</button>
   {/snippet}
 </Filters>
 

@@ -4,24 +4,27 @@
   import StatusFilter from './StatusFilter.svelte'
   import { filters } from './lib/state.svelte'
 
-  // Row 1: search (if shown) and project. The status dropdown goes on row 2 with the
-  // view's own controls (`actions`); without a search box it fits on row 1 instead.
+  // Three rows: search (if shown), then the project and status dropdowns side by
+  // side at fixed widths (so a changing label can't reflow anything), then the
+  // view's own controls (`actions`), if any. Rows 2 and 3 share a 4-column grid
+  // so their edges line up.
   // `search = false` hides the search box (the calendar and agenda have no use for it).
   let { actions, search = true }: { actions?: Snippet; search?: boolean } = $props()
 </script>
 
 <section class="filters">
-  <div class="filters-row">
-    {#if search}
+  {#if search}
+    <div class="filters-row">
       <input type="search" bind:value={filters.q} placeholder="Search…" aria-label="Search" />
-    {/if}
+    </div>
+  {/if}
+  <div class="filters-row grid4 pickers">
     <ProjectFilter />
-    {#if !search}<StatusFilter />{/if}
+    <StatusFilter />
   </div>
-  {#if search || actions}
-    <div class="filters-row wrap">
-      {#if search}<StatusFilter />{/if}
-      {@render actions?.()}
+  {#if actions}
+    <div class="filters-row grid4">
+      {@render actions()}
     </div>
   {/if}
 </section>

@@ -3,7 +3,7 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > Product name: **PTrack** (D-041). Code-level names stay lowercase `ptrack`.
 >
-> **Status:** 🟢 Back in development (2026-10-27): the user files work as tickets in the box's PTRACDEV project. PTRACDEV-1..7 done and deployed (`e8353d5`); waiting for the user to try them. (On hold 2026-10-25 → 10-27.) The server box keeps **running PTrack in testing** for the family (Debian 13, wired, Docker Compose, plain HTTP via Caddy, nightly backups; it also serves the APK at `/ptrack.apk`). Box runs `e8353d5`, now at a different address after a router restart (see `CLAUDE.local.md`). Milestones 1–5 + 7 + configuration done; M6 (v1.0 release) partly done. **Read "Resume here" first, then `todo.md`.** Repo: https://github.com/SSheffer1/ptrack
+> **Status:** 🟢 Back in development (2026-10-27): the user files work as tickets in the box's PTRACDEV project. PTRACDEV-1..7 done and deployed (`e8353d5`); waiting for the user to try them. (On hold 2026-10-25 → 10-27.) The server box keeps **running PTrack in testing** for the family (Debian 13, wired, Docker Compose, plain HTTP via Caddy, nightly backups; it also serves the APK at `/ptrack.apk`). Box runs `85a8c4a`, now at a different address after a router restart (see `CLAUDE.local.md`). Milestones 1–5 + 7 + configuration done; M6 (v1.0 release) partly done. **Read "Resume here" first, then `todo.md`.** Repo: https://github.com/SSheffer1/ptrack
 > **Last updated:** 2026-10-27
 
 ---
@@ -369,6 +369,8 @@ Build (new `deploy/` folder + server image):
 - **2026-10-27** — User filed 7 tickets in the PTRACDEV project; worked them (D-048, D-049, D-050). PTRACDEV-1 was not a bug in the data (tickets with a time used a different default; two had "1 hour before" picked); fixed by one default. PTRACDEV-2: HOME is owned by the family account. 103 server + 42 app tests.
 - **2026-10-27** — Pushed `e8353d5`. Box: backup, pull, rebuild: healthy, data intact (2 users, 3 projects, 21 tickets). `set-role HOME <user> owner` gave the user a second owner role on HOME (the family account stays owner). APK copied to the box; installed on the phone with `adb install -r` (data kept).
 - **2026-10-27** — User: the Projects dropdown got cut off and the page scrolled sideways. Two causes: dropdown panels always opened from the button's left edge (now `lib/popover.ts` `keepOnScreen` shifts them left, max width = screen), and the Calendar/Agenda filter row couldn't wrap (now `.filters-row` wraps). User confirmed on the phone. User still doesn't love the ticket list's look; will decide what they want.
+- **2026-10-27** — Pushed `85a8c4a`; box: backup, pull, rebuild: healthy, data intact; new APK copied to the box.
+- **2026-10-27** — Filter area reorganized at the user's request: row 1 search; row 2 Projects + Status dropdowns at half width each (labels ellipsize, so ticking projects can't reflow anything); row 3 Sort (half) + "+ Project" / "+ Ticket" (a quarter each). Rows 2–3 share a 4-column CSS grid (`.grid4`) so edges line up — flexbox with basis 0 misaligned them because padding is subtracted before space is shared. Same on desktop (the old one-line wide layout is gone). Checked with adb screenshots.
 
 ---
 
