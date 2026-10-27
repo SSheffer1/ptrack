@@ -385,11 +385,12 @@ label > textarea {
 }
 
 .ticket {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.75rem;
-  padding: 0.6rem 0.8rem;
+  /* Fixed slots (see TicketRow.svelte): status | title | date, then key/labels | priority. */
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.1rem 0.65rem;
+  padding: 0.65rem 0.85rem;
 }
 
 .ticket:hover {
@@ -403,46 +404,59 @@ label > textarea {
   min-width: 5.5em;
 }
 
+.ticket .title,
+.ticket .sub {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ticket .title {
-  flex: 1 1 200px;
+  font-weight: 500;
 }
 
-.ticket .labels {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-left: auto;
+.ticket .when,
+.ticket .side {
+  justify-self: end;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.ticket .when {
+  color: var(--muted); /* overdue / soon (below) override this */
+}
+
+.ticket .when.overdue {
+  color: var(--danger);
+}
+
+.ticket .when.soon {
+  color: var(--warn);
+}
+
+.ticket .sub {
+  grid-column: 2;
   font-size: 0.8rem;
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  font-size: 0.8rem;
-}
-
-.label {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0 0.35rem;
   color: var(--muted);
 }
 
+.ticket .side {
+  display: flex;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.status-icon {
+  display: block;
+  color: var(--status-color);
+}
+
+/* Color only where it needs attention: high priority, and overdue / soon dates. */
 .priority-high,
 .priority-urgent {
   color: var(--danger);
   font-weight: 600;
-}
-
-.priority-medium {
-  color: var(--warn);
-}
-
-.priority-low {
-  color: var(--muted);
 }
 
 .due {

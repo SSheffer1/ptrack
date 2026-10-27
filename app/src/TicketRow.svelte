@@ -1,40 +1,40 @@
 <script lang="ts">
-  import { PRIORITY_LABELS, STATUS_LABELS, type Item } from './lib/api'
+  import StatusIcon from './StatusIcon.svelte'
+  import { PRIORITY_LABELS, type Item } from './lib/api'
   import { dueTone, formatDue, formatDueWithTime, formatTime } from './lib/format'
   import { describeRule } from './lib/recurrence'
   import { runtime } from './lib/runtime.svelte'
   import { userName } from './lib/state.svelte'
 
+  // Every piece has a fixed place, whatever else the ticket has:
+  //   [status]  Title ................... due date
+  //             KEY · → who · labels ..... ↻ priority
   // In the agenda the day is already the heading, so only the time is shown.
   let { item, showDate = true }: { item: Item; showDate?: boolean } = $props()
+
+  const when = $derived(
+    item.status === 'done' && item.completed_on
+      ? `✓ ${formatDue(item.completed_on)}`
+      : item.due && showDate
+        ? formatDueWithTime(item.due, item.due_time)
+        : item.due_time
+          ? formatTime(item.due_time)
+          : '',
+  )
+  const tone = $derived(item.due && item.status !== 'done' ? dueTone(item.due, item.status) : '')
+  const others = $derived(item.assignee_id && item.assignee_id !== runtime.me?.id ? [`→ ${userName(item.assignee_id)}`] : [])
+  const sub = $derived([item.key ?? '…', ...others, ...item.labels].join(' · '))
 </script>
 
 <a href="#/items/{item.key ?? item.id}" class="ticket">
-  <span class="key">{item.key ?? '…'}</span>
+  <StatusIcon status={item.status} />
   <span class="title">{item.title}</span>
-  <span class="meta">
+  <span class="when {tone}">{when}</span>
+  <span class="sub">{sub}</span>
+  <span class="side">
+    {#if item.repeat}<span title={describeRule(item.repeat)}>↻</span>{/if}
     {#if item.priority !== 'none'}
-      <span class="priority priority-{item.priority}">{PRIORITY_LABELS[item.priority]}</span>
+      <span class="priority-{item.priority}">{PRIORITY_LABELS[item.priority]}</span>
     {/if}
-    {#if item.assignee_id && item.assignee_id !== runtime.me?.id}
-      <span class="assignee" title="Assigned to">→ {userName(item.assignee_id)}</span>
-    {/if}
-    {#if item.repeat}
-      <span class="repeat" title={describeRule(item.repeat)}>↻</span>
-    {/if}
-    {#if item.status === 'done' && item.completed_on}
-      <span class="due" title="Completed">✓ {formatDue(item.completed_on)}</span>
-    {:else if item.due && showDate}
-      <span class="due {dueTone(item.due, item.status)}">{formatDueWithTime(item.due, item.due_time)}</span>
-    {:else if item.due_time}
-      <span class="due">{formatTime(item.due_time)}</span>
-    {/if}
-    <span class="badge status-{item.status}">{STATUS_LABELS[item.status]}</span>
   </span>
-  {#if item.labels.length}
-    <!-- Labels keep to the right edge, out of the way, even when the row wraps. -->
-    <span class="labels">
-      {#each item.labels as label (label)}<span class="label">{label}</span>{/each}
-    </span>
-  {/if}
 </a>
