@@ -13,6 +13,7 @@ export interface SavedState {
   cursor: number
   epoch: number
   people: People // who I am, and who's in my projects
+  lastSync?: number | null // when the last sync succeeded (ms), for Settings; missing in older files
   log: LogEntry[]
 }
 

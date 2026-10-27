@@ -21,9 +21,14 @@ import {
   type ItemFilters,
   type ItemUpdate,
   type Member,
+  notifiedUser,
+  PRIORITIES,
+  type Priority,
   type Project,
   type Role,
-  notifiedUser,
+  type SortOrder,
+  type Status,
+  STATUSES,
 } from '../types'
 import { toISODate } from '../format'
 import { PREF_DEFAULTS } from '../prefs.svelte'
@@ -165,10 +170,13 @@ export class LocalBackend implements Backend {
   async listItems(f: ItemFilters = {}): Promise<Item[]> {
     const visible = new Set(this.projects().map((p) => p.id))
     let rows = [...this.store.rows.item.values()].filter((i) => !i.deleted && visible.has(i.project_id as string))
-    if (f.project) {
-      const p = this.projectByKey(f.project)
-      if (!p) throw new ApiError(404, `project ${f.project} not found`)
-      rows = rows.filter((i) => i.project_id === p.id)
+    if (f.project?.length) {
+      const ids = f.project.map((key) => {
+        const p = this.projectByKey(key)
+        if (!p) throw new ApiError(404, `project ${key} not found`)
+        return p.id
+      })
+      rows = rows.filter((i) => ids.includes(i.project_id as string))
     }
     if (f.status?.length) rows = rows.filter((i) => f.status!.includes(i.status as Item['status']))
     if (f.q) {
@@ -200,12 +208,20 @@ export class LocalBackend implements Backend {
         }
         return 0
       }
-    const sorts = {
+    const byDue = chain(
+      by((r) => r.due as string | null),
+      by((r) => r.due_time as string | null),
+    )
+    const keys = new Map(this.projects().map((p): [string, string] => [p.id, p.key as string]))
+    // Ties keep due-date order, then creation order.
+    const thenByDue = (cmp: (a: Row, b: Row) => number) => chain(cmp, byDue, by((r) => r.created_at))
+    const sorts: Record<SortOrder, (a: Row, b: Row) => number> = {
       created: by((r) => r.created_at),
-      due: chain(
-        by((r) => r.due as string | null),
-        by((r) => r.due_time as string | null),
-      ),
+      due: byDue,
+      project: thenByDue(by((r) => keys.get(r.project_id as string) ?? '')),
+      priority: thenByDue(by((r) => -PRIORITIES.indexOf(r.priority as Priority))), // most urgent first
+      status: thenByDue(by((r) => STATUSES.indexOf(r.status as Status))),
+      title: thenByDue(by((r) => (r.title as string).toLowerCase())),
       completed: chain(
         by((r) => r.completed_on as string | null, true),
         by((r) => r.updated_at, true),
@@ -273,7 +289,9 @@ export class LocalBackend implements Backend {
 
   async deleteItem(ref: string): Promise<void> {
     const row = this.findItem(ref)
-    this.requireOwner(row.project_id as string, 'delete tickets')
+    if (this.role(row.project_id as string) !== 'owner' && !this.people().me?.is_admin) {
+      throw new ApiError(403, "only the project's owner or an admin can delete tickets")
+    }
     this.write('item', row.id, { deleted: true })
   }
 
@@ -354,7 +372,7 @@ export class LocalBackend implements Backend {
       if (!(name in PREF_DEFAULTS)) throw new ApiError(400, `unknown preference ${name}`)
     }
     const cleaned = { ...values }
-    for (const name of ['reminders_timed', 'reminders_untimed']) {
+    for (const name of ['reminders']) {
       if (Array.isArray(cleaned[name])) {
         checkReminders(cleaned[name] as string[], false)
         cleaned[name] = normalizeReminders(cleaned[name] as string[])

@@ -46,13 +46,12 @@ that uses them: `app/src/lib/prefs.svelte.ts`. The server checks and stores them
 
 | Preference | Default | Affects |
 |---|---|---|
-| Default reminders, timed tickets | 8 hours before | tickets with a due time whose reminders you haven't picked |
-| Default reminders, untimed tickets | at the due hour on the day | tickets without a time, likewise |
+| Default reminders | at the due time | tickets with a due date whose reminders you haven't picked, with or without a due time (one default for both since D-048; the old separate timed/untimed settings are ignored) |
 | Untimed tickets are due at | 9 AM | when reminders for untimed tickets count from |
 | Weeks start on | Sunday | the month calendar |
 | Due dates turn orange | 2 days ahead | list, agenda, calendar, ticket page |
-| Statuses shown when the app opens | all except Done | the status chips' starting state |
-| List sorted by | Newest last | the List view's starting sort |
+| Statuses shown when the app opens | all except Done | the Status filter's starting state (list, agenda and calendar) |
+| List sorted by | Newest last | the List view's starting sort (also: due date, recently completed, project, priority, status, title) |
 | Sync in the background | every 5 minutes | the phone app (offline-first devices); "never" leaves syncing to edits, opening the app, and Sync now |
 
 Per device (not synced): the **server address**, entered when signing in on the
@@ -89,10 +88,10 @@ phone, and the browser-only **offline-first test mode** switch.
 | Priorities | No priority, Low, Medium, High, Urgent | both: `models.py` `Priority`, `types.ts` `PRIORITIES` |
 | New ticket defaults | To do, no priority, no labels, unassigned | `server/src/ptrack/api.py` `ItemCreate`, `backend.ts` `createItem` |
 | Project keys | 1–10 chars, A–Z and 0–9, starting with a letter; unique on the server; offline clashes become GYM → GYM2 | both: `api.py`, `backend.ts`; `sync.py` `_resolve_key_conflicts` |
-| Roles | owner: everything; editor: create, edit, comment on tickets | both: `sync.py` `_check_permission`, `backend.ts` |
+| Roles | owner: everything; editor: create, edit, comment on tickets; a server admin who is a member may also delete tickets | both: `sync.py` `_check_permission`, `backend.ts` |
 | "Assigned" date | the day the ticket was created, unless set | `api.py` `_read`, `backend.ts` `toItem` |
 | Completion date | the day it's marked done; cleared when reopened | `sync.py` `_update_completion_dates`, `backend.ts` `updateItem` |
-| Calendar: finished tickets | always shown, struck through, on the day completed | `app/src/CalendarMonth.svelte` |
+| Calendar: finished tickets | shown when the Status filter includes Done, struck through, on the day completed | `app/src/CalendarMonth.svelte` |
 | Date/time formats, light/dark theme | follow the device | `app/src/lib/format.ts`, `app/src/app.css` |
 
 ### Accounts

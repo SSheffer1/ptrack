@@ -10,7 +10,7 @@ Android app that works offline and syncs to a server you run at home.
   (Backlog → To do → In progress → Blocked → Done), priorities, labels, plain-text
   descriptions, comments, and a full history of every change.
 - **Calendar and agenda.** Due dates (with optional times) on a month calendar and a
-  day-by-day agenda; finished tickets stay visible, struck through, on the day you did them.
+  day-by-day agenda, filtered like the list; finished tickets show struck through on the day you did them.
 - **Repeating tickets.** "Every Friday", "every 2 weeks", "monthly"… Mark one done and the
   next copy appears with the next due date.
 - **Assigned and completed dates.** Recorded automatically, editable when you entered

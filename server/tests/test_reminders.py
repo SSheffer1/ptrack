@@ -55,4 +55,4 @@ def test_recurring_copy_moves_specific_time_reminders(client, home):
 
 
 def test_preferences_reject_specific_times(client):
-    assert client.patch("/me/prefs", json={"reminders_timed": ["@2026-10-27T19:30"]}).status_code == 400
+    assert client.patch("/me/prefs", json={"reminders": ["@2026-10-27T19:30"]}).status_code == 400

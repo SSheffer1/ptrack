@@ -11,15 +11,16 @@ const OFFSET_RE = /^(0|-\d{1,4}[mhd])$/
 const AT_RE = /^@(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
 const UNIT_MINUTES = { m: 1, h: 60, d: 1440 } as const
 
-export function defaultReminders(timed: boolean): string[] {
-  return timed ? prefs.reminders_timed : prefs.reminders_untimed
+/** Your default reminders: the same for every ticket, with or without a due time. */
+export function defaultReminders(): string[] {
+  return prefs.reminders
 }
 
 const untimedTime = () => `${String(prefs.untimed_hour).padStart(2, '0')}:00`
 
 /** The reminders that actually apply to an item (its own, or the default). */
 export function effectiveReminders(item: Pick<Item, 'reminders' | 'due_time'>): string[] {
-  return item.reminders ?? defaultReminders(!!item.due_time)
+  return item.reminders ?? defaultReminders()
 }
 
 export function isValidOffset(offset: string): boolean {

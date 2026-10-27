@@ -21,7 +21,7 @@ from sqlmodel import Session, col, select
 from .auth import Actor, ActorDep, UserRead, load_roles, user_read
 from .config import settings
 from .db import SessionDep
-from .models import Change, Comment, Item, ItemType, Member, Priority, Project, Role, Status, User, UserPrefs
+from .models import Change, Comment, Item, ItemType, Member, Priority, Project, Role, SortOrder, Status, User, UserPrefs
 from .prefs import scope as prefs_scope
 from .sync import (
     RESERVED_DEVICES,
@@ -298,7 +298,7 @@ def _find_and_read(session: Session, actor: Actor, ref: str) -> ItemRead:
 def list_items(
     actor: ActorDep,
     session: SessionDep,
-    project: str | None = None,
+    project: Annotated[list[str] | None, Query()] = None,  # one or more project keys
     status: Annotated[list[Status] | None, Query()] = None,
     label: str | None = None,
     q: str | None = None,
@@ -307,11 +307,12 @@ def list_items(
     completed_from: date | None = None,
     completed_to: date | None = None,
     assignee: Literal["me"] | None = None,  # "me" = assigned to me, or unassigned and created by me
-    sort: Literal["created", "due", "completed"] = "created",
+    sort: SortOrder = "created",
 ) -> list[ItemRead]:
-    project_ids = [p.id for p in _visible_projects(session, actor)]
+    visible = _visible_projects(session, actor)
+    project_ids = [p.id for p in visible]
     if project:
-        project_ids = [_get_project(session, actor, project).id]
+        project_ids = [_get_project(session, actor, key).id for key in project]
     query = select(Item).where(col(Item.project_id).in_(project_ids), col(Item.deleted).is_(False))
     if status:
         query = query.where(col(Item.status).in_(status))
@@ -329,14 +330,25 @@ def list_items(
         query = query.where(
             (Item.assignee_id == actor.id) | (col(Item.assignee_id).is_(None) & (Item.created_by == actor.id))
         )
+    # Undated tickets last; same-day tickets by time, untimed last.
+    by_due = [col(Item.due).is_(None), col(Item.due), col(Item.due_time).is_(None), col(Item.due_time)]
     order = {
         "created": [col(Item.created_at)],
-        # Undated tickets last; same-day tickets by time, untimed last.
-        "due": [col(Item.due).is_(None), col(Item.due), col(Item.due_time).is_(None), col(Item.due_time)],
+        "due": by_due,
         # Most recently finished first; unfinished last.
         "completed": [col(Item.completed_on).is_(None), col(Item.completed_on).desc(), col(Item.updated_at).desc()],
-    }[sort]
-    items = session.exec(query.order_by(*order)).all()
+    }.get(sort, [*by_due, col(Item.created_at)])
+    items = list(session.exec(query.order_by(*order)).all())
+    # The rest sort in Python (a stable sort, so ties stay in due-date order).
+    keys = {p.id: p.key for p in visible}
+    then = {
+        "project": lambda i: keys.get(i.project_id, ""),
+        "priority": lambda i: -list(Priority).index(i.priority),  # most urgent first
+        "status": lambda i: list(Status).index(i.status),  # backlog, to do, in progress, blocked, done
+        "title": lambda i: i.title.casefold(),
+    }.get(sort)
+    if then:
+        items.sort(key=then)
     if label:  # labels are a JSON list; filtering in Python is fine at personal scale
         items = [i for i in items if label in i.labels]
     return [_read(session, i) for i in items]

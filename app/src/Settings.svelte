@@ -3,7 +3,7 @@
   import { account, type AdminUser, type Device } from './lib/account'
   import { errorText } from './lib/api'
   import { ago, exactTime } from './lib/format'
-  import { discardPending, runtime, setBrowserOfflineMode, signOut, syncNow } from './lib/runtime.svelte'
+  import { changeServer, discardPending, runtime, setBrowserOfflineMode, signOut, syncNow } from './lib/runtime.svelte'
 
   let devices = $state<Device[]>([])
   let family = $state<AdminUser[]>([])
@@ -13,6 +13,25 @@
   // Change password
   let currentPw = $state('')
   let newPw = $state('')
+
+  // Change the server address (phone only; the browser uses the site it came from)
+  let newServer = $state<string | null>(null) // null = not editing
+  let serverError = $state('')
+  let checkingServer = $state(false)
+
+  async function saveServer(e: SubmitEvent) {
+    e.preventDefault()
+    serverError = ''
+    checkingServer = true
+    try {
+      await changeServer(newServer ?? '')
+      newServer = null
+    } catch (err) {
+      serverError = errorText(err)
+    } finally {
+      checkingServer = false
+    }
+  }
 
   // New family account
   let newUser = $state({ username: '', display_name: '', password: '' })
@@ -119,7 +138,12 @@
   <div class="panel">
     <dl class="facts">
       <dt>Server</dt>
-      <dd class="mono">{runtime.serverUrl || 'this site'}</dd>
+      <dd class="mono">
+        {runtime.serverUrl || 'this site'}
+        {#if runtime.native && newServer === null}
+          <button onclick={() => (newServer = runtime.serverUrl)}>Change</button>
+        {/if}
+      </dd>
       <dt>Status</dt>
       <dd>
         {#if runtime.sync.syncing}Syncing…{:else if runtime.sync.error}<span class="error">{runtime.sync.error}</span
@@ -136,6 +160,20 @@
       <dt>This device</dt>
       <dd class="mono">{runtime.deviceId}</dd>
     </dl>
+    {#if newServer !== null}
+      <form class="server-change" onsubmit={saveServer}>
+        <label>
+          New server address
+          <input bind:value={newServer} placeholder="http://192.168.1.20" inputmode="url" autocapitalize="off" required />
+        </label>
+        <p class="hint">For when the server moved to a new address. Your tickets and sign-in stay on this phone.</p>
+        {#if serverError}<p class="error">{serverError}</p>{/if}
+        <div class="actions">
+          <button type="button" onclick={() => ((newServer = null), (serverError = ''))}>Cancel</button>
+          <button type="submit" class="primary" disabled={checkingServer}>{checkingServer ? 'Checking…' : 'Save'}</button>
+        </div>
+      </form>
+    {/if}
     <div class="actions">
       {#if runtime.sync.rejected}
         <button class="danger" onclick={discard}>Discard unsynced changes</button>

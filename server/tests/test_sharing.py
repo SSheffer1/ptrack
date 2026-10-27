@@ -2,7 +2,12 @@
 
 import uuid
 
+import pytest
+from sqlmodel import Session
 from test_sync import change, new_ticket, sync
+
+from ptrack.admin import _set_role
+from ptrack.models import Role
 
 
 def share(owner, key, username):
@@ -50,6 +55,18 @@ def test_only_the_owner_deletes_renames_and_manages(client, bob, sign_in, home):
 
     assert client.patch("/projects/HOME", json={"name": "Our home"}).json()["name"] == "Our home"
     assert client.delete("/items/HOME-1").status_code == 204
+
+
+def test_an_admin_editor_may_delete_tickets(client, bob, sign_in):
+    dana = sign_in("dana", admin=True)
+    bob.post("/projects", json={"key": "BOBS", "name": "Bob's"})
+    bob.post("/items", json={"project": "BOBS", "title": "Fix bike"})
+    bob.post("/items", json={"project": "BOBS", "title": "Oil chain"})
+    share(bob, "BOBS", "dana")
+
+    assert dana.delete("/items/BOBS-1").status_code == 204  # admin, though only an editor
+    assert client.delete("/items/BOBS-2").status_code == 404  # admins still only see their own projects
+    assert dana.patch("/projects/BOBS", json={"name": "Dana's"}).status_code == 403  # the project stays bob's
 
 
 def test_assign_to_a_member_only(client, bob, sign_in, home):
@@ -168,3 +185,21 @@ def test_authors_delete_their_own_comments(client, bob, home):
     c = bob.post("/items/HOME-1/comments", json={"body": "oops"}).json()
     assert bob.delete(f"/items/HOME-1/comments/{c['id']}").status_code == 204
     assert client.get("/items/HOME-1/comments").json() == []
+
+
+def test_admin_command_sets_roles(engine, client, bob, sign_in, home):
+    client.post("/items", json={"project": "HOME", "title": "Fix sink"})
+    share(client, "HOME", "bob")
+    sign_in("carol")
+    with Session(engine) as session:
+        assert _set_role(session, "home", "bob", Role.owner) == "bob is now owner of HOME"
+        assert _set_role(session, "HOME", "carol", Role.editor) == "added carol to HOME as editor"
+        session.commit()
+    assert bob.patch("/projects/HOME", json={"name": "Our home"}).status_code == 200  # bob owns it too now
+    assert bob.delete("/items/HOME-1").status_code == 204
+
+    with Session(engine) as session:
+        _set_role(session, "HOME", "alice", Role.editor)  # fine: bob is still an owner
+        session.commit()
+        with pytest.raises(SystemExit, match="only owner"):
+            _set_role(session, "HOME", "bob", Role.editor)

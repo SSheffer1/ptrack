@@ -53,7 +53,7 @@ export const httpBackend: Backend = {
 
   listItems(filters: ItemFilters = {}) {
     const params = new URLSearchParams()
-    if (filters.project) params.set('project', filters.project)
+    for (const p of filters.project ?? []) params.append('project', p)
     for (const s of filters.status ?? []) params.append('status', s)
     if (filters.label) params.set('label', filters.label)
     if (filters.q) params.set('q', filters.q)

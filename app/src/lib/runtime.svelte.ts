@@ -13,7 +13,7 @@
 import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { account } from './account'
-import { connection } from './connection'
+import { authHeaders, connection } from './connection'
 import { httpBackend } from './http'
 import { LocalBackend } from './local/backend'
 import { loadState, saveState } from './local/persist'
@@ -83,7 +83,8 @@ function scheduleReminderUpdate() {
 function saveNow() {
   const { deviceId, serverUrl, token, cursor, epoch } = settings
   const people = $state.snapshot(runtime.people) as People
-  return saveState({ version: 2, deviceId, serverUrl, token, cursor, epoch, people, log: store.entries() }).catch(
+  const lastSync = runtime.sync.lastSync
+  return saveState({ version: 2, deviceId, serverUrl, token, cursor, epoch, people, lastSync, log: store.entries() }).catch(
     (e) => (runtime.sync.error = `Couldn't save: ${e}`),
   )
 }
@@ -140,6 +141,7 @@ export async function init() {
     runtime.serverUrl = connection.baseUrl = settings.serverUrl
     connection.token = settings.token
     runtime.people = saved?.people ?? noPeople()
+    runtime.sync.lastSync = saved?.lastSync ?? null
     runtime.me = settings.token ? runtime.people.me : null
     engine = new SyncEngine(
       store,
@@ -225,6 +227,26 @@ export async function signIn(username: string, password: string, serverUrl = run
   runtime.dataVersion++
 }
 
+/** Point the phone at a new server address (e.g. the server got a new IP), keeping this
+ * device's data and sign-in. Only saved if the new address knows this device as the same
+ * person, so a typo or a different server can't sign it out and wipe unsynced changes. */
+export async function changeServer(url: string) {
+  url = normalizeUrl(url)
+  let res: Response
+  try {
+    res = await fetch(`${url}/api/me`, { headers: authHeaders() })
+  } catch {
+    throw new Error(`Can't reach a server at ${url}`)
+  }
+  if (res.status === 401) throw new Error(`The server at ${url} doesn't know this device; is that the right address?`)
+  if (!res.ok) throw new Error(`The server at ${url} answered with error ${res.status}`)
+  const me = (await res.json().catch(() => null)) as User | null
+  if (me?.id !== runtime.me?.id) throw new Error(`The server at ${url} has you signed in as someone else`)
+  runtime.serverUrl = connection.baseUrl = settings.serverUrl = url
+  await saveNow()
+  syncNow()
+}
+
 export async function signOut() {
   try {
     await account.logout()
@@ -253,6 +275,7 @@ function clearLocalData() {
   runtime.sync.pending = 0
   runtime.sync.rejected = false
   runtime.sync.error = ''
+  runtime.sync.lastSync = null
   scheduleReminderUpdate()
 }
 

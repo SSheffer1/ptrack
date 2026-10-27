@@ -15,7 +15,8 @@ from . import backup
 from .auth import MIN_PASSWORD, USERNAME_PATTERN, create_user, hash_password
 from .config import describe, settings
 from .db import engine, init_db
-from .models import DeviceToken, User
+from .models import DeviceToken, Member, Project, Role, User
+from .sync import now_ms
 
 
 def _ask_password() -> str:
@@ -36,6 +37,24 @@ def _find(session: Session, username: str) -> User:
     return user
 
 
+def _set_role(session: Session, key: str, username: str, role: Role) -> str:
+    user = _find(session, username)
+    project = session.exec(select(Project).where(Project.key == key.upper(), col(Project.deleted).is_(False))).first()
+    if project is None:
+        sys.exit(f"no project with key {key!r}")
+    member = session.get(Member, (project.id, user.id))
+    if member is None:
+        session.add(Member(project_id=project.id, user_id=user.id, role=role, added_at=now_ms()))
+        user.epoch += 1  # their devices download the project on their next sync
+        return f"added {user.username} to {project.key} as {role.value}"
+    if member.role == Role.owner and role != Role.owner:
+        owners = session.exec(select(Member).where(Member.project_id == project.id, Member.role == Role.owner)).all()
+        if len(owners) == 1:
+            sys.exit(f"{user.username} is {project.key}'s only owner; make someone else owner first")
+    member.role = role  # devices pick up the new role on their next sync
+    return f"{user.username} is now {role.value} of {project.key}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ptrack-admin", description="Manage ptrack accounts.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -54,6 +73,10 @@ def main() -> None:
     admin.add_argument("username")
     admin.add_argument("--off", action="store_true")
     commands.add_parser("sign-out", help="sign an account out on all its devices").add_argument("username")
+    role = commands.add_parser("set-role", help="make someone an owner or editor of a project (adds them if needed)")
+    role.add_argument("project", help="project key, e.g. HOME")
+    role.add_argument("username")
+    role.add_argument("role", choices=[r.value for r in Role])
     commands.add_parser("show-config", help="print the server settings in effect (ptrack.toml + defaults)")
     commands.add_parser("backup", help="back up the database now (and delete expired backups)")
     commands.add_parser("list-backups", help="show the backups")
@@ -99,6 +122,8 @@ def main() -> None:
             user = _find(session, args.username)
             user.is_admin = not args.off
             print(f"{user.username} is {'now' if user.is_admin else 'no longer'} an admin")
+        elif args.command == "set-role":
+            print(_set_role(session, args.project, args.username, Role(args.role)))
         elif args.command == "sign-out":
             user = _find(session, args.username)
             devices = session.exec(

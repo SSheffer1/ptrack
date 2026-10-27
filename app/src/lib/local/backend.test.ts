@@ -80,7 +80,24 @@ describe('LocalBackend', () => {
     expect(await titles({ label: 'x' })).toEqual(['Later'])
     expect(await titles({ q: 'SOON' })).toEqual(['Sooner'])
     expect(await titles({ due_from: '2026-11-02' })).toEqual(['Later'])
-    await expect(api.listItems({ project: 'NOPE' })).rejects.toMatchObject({ status: 404 })
+    await expect(api.listItems({ project: ['NOPE'] })).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('filters by several projects and has the server’s other sorts', async () => {
+    await api.createProject('CAR', 'Car')
+    await api.createProject('GYM', 'Gym')
+    await api.createItem({ project: 'CAR', title: 'wash', priority: 'low', status: 'blocked' })
+    await api.createItem({ project: 'HOME', title: 'Bills', priority: 'urgent', due: '2026-11-02', status: 'in_progress' })
+    await api.createItem({ project: 'HOME', title: 'apples', priority: 'urgent', due: '2026-11-01', status: 'backlog' })
+    await api.createItem({ project: 'GYM', title: 'Cat food' })
+    const titles = async (f = {}) => (await api.listItems(f)).map((i) => i.title)
+
+    expect(await titles({ project: ['HOME', 'CAR'], sort: 'title' })).toEqual(['apples', 'Bills', 'wash'])
+    // Same rules as the server (test_sort_by_project_priority_status_title): ties in due-date order.
+    expect(await titles({ sort: 'project' })).toEqual(['wash', 'Cat food', 'apples', 'Bills'])
+    expect(await titles({ sort: 'priority' })).toEqual(['apples', 'Bills', 'wash', 'Cat food'])
+    expect(await titles({ sort: 'status' })).toEqual(['apples', 'Cat food', 'Bills', 'wash'])
+    expect(await titles({ sort: 'title' })).toEqual(['apples', 'Bills', 'Cat food', 'wash'])
   })
 
   it('soft-deletes and keeps history and comments', async () => {
@@ -114,6 +131,15 @@ describe('LocalBackend', () => {
     await expect(api.deleteProject('HOME')).rejects.toMatchObject({ status: 403 })
   })
 
+  it('an admin may delete tickets as an editor', async () => {
+    const { id } = await api.createItem({ project: 'HOME', title: 'x' })
+    syncedMembers({ alice: 'editor', bob: 'owner' })
+    people.me = { ...ALICE, is_admin: true }
+    await api.deleteItem(id)
+    await expect(api.getItem(id)).rejects.toMatchObject({ status: 404 })
+    await expect(api.updateProject('HOME', { name: 'Mine now' })).rejects.toMatchObject({ status: 403 })
+  })
+
   it('assignees must be members, and only they set reminders', async () => {
     const { id } = await api.createItem({ project: 'HOME', title: 'Mow lawn', due: '2026-11-01' })
     await expect(api.updateItem(id, { assignee_id: 'bob' })).rejects.toMatchObject({ status: 403 })
@@ -133,14 +159,14 @@ describe('LocalBackend', () => {
 
   it('keeps my preferences as a synced record', async () => {
     expect(await api.getPrefs()).toEqual({})
-    expect(await api.updatePrefs({ week_start: 'monday', reminders_timed: ['-8H', '-1d'] })).toEqual({
+    expect(await api.updatePrefs({ week_start: 'monday', reminders: ['-8H', '-1d'] })).toEqual({
       week_start: 'monday',
-      reminders_timed: ['-1d', '-8h'],
+      reminders: ['-1d', '-8h'],
     })
     expect(store.pending('phone').filter((e) => e.entity === 'prefs').map((e) => e.entity_id)).toEqual(['alice', 'alice'])
-    expect(await api.updatePrefs({ week_start: null })).toEqual({ reminders_timed: ['-1d', '-8h'] })
+    expect(await api.updatePrefs({ week_start: null })).toEqual({ reminders: ['-1d', '-8h'] })
     await expect(api.updatePrefs({ colour: 'blue' })).rejects.toMatchObject({ status: 400 })
-    await expect(api.updatePrefs({ reminders_timed: ['@2026-10-27T19:30'] })).rejects.toMatchObject({ status: 400 })
+    await expect(api.updatePrefs({ reminders: ['@2026-10-27T19:30'] })).rejects.toMatchObject({ status: 400 })
   })
 
   it('comments: the author edits and deletes; the owner deletes others\u2019', async () => {

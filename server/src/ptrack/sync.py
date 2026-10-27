@@ -273,8 +273,8 @@ def _check_permission(session: Session, actor: Actor, change: ChangeIn, value: A
 
     if change.entity == "item":
         item = session.get(Item, change.entity_id)
-        if change.field == "deleted" and role != Role.owner:
-            raise Denied("only the project's owner can delete tickets")
+        if change.field == "deleted" and role != Role.owner and not actor.user.is_admin:
+            raise Denied("only the project's owner or an admin can delete tickets")
         if change.field == "project_id" and item and item.project_id and value != item.project_id:
             raise Denied("tickets can't move to another project")
         if change.field == "assignee_id" and value is not None and not session.get(Member, (scope, value)):

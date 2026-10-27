@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applyPrefs } from './prefs.svelte'
 import { describeOffset, dueMoment, normalizeReminders, upcomingReminders } from './reminders'
 import type { Item } from './types'
@@ -16,15 +16,23 @@ function item(extra: Partial<Item>): Item {
 const NOW = new Date(2026, 9, 24, 12, 0) // Sat Oct 24 2026, noon
 const remind = (items: Item[], now: Date) => upcomingReminders(items, now, 'me')
 
+// Dates near today print as "Today"/"Tomorrow", so the clock is frozen at NOW;
+// otherwise these tests fail on the days they mention.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(NOW)
+})
+afterAll(() => vi.useRealTimers())
+
 describe('reminders', () => {
   it('untimed tickets are due at 9:00', () => {
     expect(dueMoment(item({ due: '2026-10-28' }))).toEqual(new Date(2026, 9, 28, 9, 0))
     expect(dueMoment(item({ due: '2026-10-28', due_time: '14:30:00' }))).toEqual(new Date(2026, 9, 28, 14, 30))
   })
 
-  it('defaults: 8 hours before a timed ticket, 9 AM on the day otherwise', () => {
+  it('default: at the due time (9 AM on the day without a time)', () => {
     const [timed] = remind([item({ due: '2026-10-28', due_time: '10:00:00' })], NOW)
-    expect(timed.at).toEqual(new Date(2026, 9, 28, 2, 0))
+    expect(timed.at).toEqual(new Date(2026, 9, 28, 10, 0))
     const [untimed] = remind([item({ due: '2026-10-28' })], NOW)
     expect(untimed.at).toEqual(new Date(2026, 9, 28, 9, 0))
     expect(untimed.body).toBe('Due Wed, Oct 28 · SCHOOL-1')
@@ -77,16 +85,20 @@ describe('reminders', () => {
     afterEach(() => applyPrefs({}))
 
     it('uses your untimed hour and default reminders', () => {
-      applyPrefs({ untimed_hour: 7, reminders_untimed: ['-1d'], reminders_timed: ['-1h'] })
-      expect(remind([item({ due: '2026-10-28' })], NOW).map((r) => r.at)).toEqual([new Date(2026, 9, 27, 7, 0)])
+      applyPrefs({ untimed_hour: 7, reminders: ['-1d', '-1h'] }) // the same default for both kinds
+      expect(remind([item({ due: '2026-10-28' })], NOW).map((r) => r.at)).toEqual([
+        new Date(2026, 9, 27, 7, 0),
+        new Date(2026, 9, 28, 6, 0),
+      ])
       expect(remind([item({ due: '2026-10-28', due_time: '10:00:00' })], NOW).map((r) => r.at)).toEqual([
+        new Date(2026, 9, 27, 10, 0),
         new Date(2026, 9, 28, 9, 0),
       ])
       expect(describeOffset('0', false)).toBe('7 AM on the day')
     })
 
     it("a ticket's own reminders still win", () => {
-      applyPrefs({ reminders_untimed: [] })
+      applyPrefs({ reminders: [] })
       expect(remind([item({ due: '2026-10-28' })], NOW)).toEqual([])
       expect(remind([item({ due: '2026-10-28', reminders: ['0'] })], NOW)).toHaveLength(1)
     })

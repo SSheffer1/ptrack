@@ -36,24 +36,22 @@
 {/snippet}
 
 <div class="panel prefs">
-  {#each [true, false] as timed (timed)}
-    {@const name = timed ? 'reminders_timed' : 'reminders_untimed'}
-    <div class="field">
-      <span>Default reminders, tickets {timed ? 'with' : 'without'} a time {@render reset(name)}</span>
-      <div class="chips">
-        {#each normalizeReminders([...reminderChoices(timed), ...prefs[name]])! as offset (offset)}
-          <button
-            type="button"
-            class="chip"
-            class:on={prefs[name].includes(offset)}
-            onclick={() => set(name, normalizeReminders(toggleIn(prefs[name], offset)))}
-          >
-            {describeOffset(offset, timed)}
-          </button>
-        {/each}
-      </div>
+  <div class="field">
+    <span>Default reminders {@render reset('reminders')}</span>
+    <div class="chips">
+      {#each normalizeReminders([...reminderChoices(true), ...prefs.reminders])! as offset (offset)}
+        <button
+          type="button"
+          class="chip"
+          class:on={prefs.reminders.includes(offset)}
+          onclick={() => set('reminders', normalizeReminders(toggleIn(prefs.reminders, offset)))}
+        >
+          {describeOffset(offset, true)}
+        </button>
+      {/each}
     </div>
-  {/each}
+    <span class="hint">For every ticket with a due date. Without a due time, the due time counts as {hourLabel(prefs.untimed_hour)}.</span>
+  </div>
 
   <div class="row">
     <label>

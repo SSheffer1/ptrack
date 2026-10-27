@@ -20,7 +20,7 @@
   let { value, hasDue, timed, onchange }: Props = $props()
 
   // Without a due date the defaults don't apply, so nothing is on until a time is added.
-  const active = $derived(value ?? (hasDue ? defaultReminders(timed) : []))
+  const active = $derived(value ?? (hasDue ? defaultReminders() : []))
   // Show the standard choices, plus any custom offset already on the ticket.
   const choices = $derived(normalizeReminders([...reminderChoices(timed), ...active.filter((r) => !isSpecificTime(r))])!)
   const times = $derived(active.filter(isSpecificTime))

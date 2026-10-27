@@ -50,14 +50,19 @@
   let latestRequest = 0
   async function load(range: { from: string; to: string }) {
     const request = ++latestRequest
-    // The status filter applies to open tickets; finished ones always show, struck through.
-    const chosen = filters.statuses.filter((s) => s !== 'done')
-    const openStatuses = chosen.length ? chosen : STATUSES.filter((s) => s !== 'done')
+    // Same status filter as the List (nothing ticked = everything). Finished tickets
+    // show on the day they were completed, struck through, when Done is ticked.
+    const shown = filters.statuses.length ? filters.statuses : STATUSES
+    const openStatuses = shown.filter((s) => s !== 'done')
     const common = { ...commonFilters(), q: undefined } // no search box here, so don't apply the List's search
     try {
       const [open, done] = await Promise.all([
-        api.listItems({ ...common, status: openStatuses, due_from: range.from, due_to: range.to }),
-        api.listItems({ ...common, status: ['done'], completed_from: range.from, completed_to: range.to }),
+        openStatuses.length
+          ? api.listItems({ ...common, status: openStatuses, due_from: range.from, due_to: range.to })
+          : [],
+        shown.includes('done')
+          ? api.listItems({ ...common, status: ['done'], completed_from: range.from, completed_to: range.to })
+          : [],
       ])
       if (request === latestRequest) {
         items = [...open, ...done]

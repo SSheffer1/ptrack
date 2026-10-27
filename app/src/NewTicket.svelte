@@ -14,7 +14,7 @@
   let { initialDue = '', oncreated, oncancel }: Props = $props()
 
   // Start with the project the views are filtered to, or the first one.
-  let project = $state(filters.project || projects.list[0]?.key || '')
+  let project = $state(filters.projects[0] || projects.list[0]?.key || '')
   let title = $state('')
   let body = $state('')
   let priority = $state<Priority>('none')

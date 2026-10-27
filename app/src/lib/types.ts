@@ -123,7 +123,7 @@ export interface Change {
 }
 
 export interface ItemFilters {
-  project?: string
+  project?: string[] // project keys; none = all
   status?: Status[]
   label?: string
   q?: string
@@ -135,11 +135,15 @@ export interface ItemFilters {
   sort?: SortOrder
 }
 
-export type SortOrder = 'created' | 'due' | 'completed'
+export type SortOrder = 'created' | 'due' | 'completed' | 'project' | 'priority' | 'status' | 'title'
 export const SORT_LABELS: Record<SortOrder, string> = {
   created: 'Newest last',
   due: 'Due date',
   completed: 'Recently completed',
+  project: 'Project',
+  priority: 'Priority',
+  status: 'Status',
+  title: 'Title',
 }
 
 export class ApiError extends Error {

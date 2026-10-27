@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import ProjectFilter from './ProjectFilter.svelte'
   import StatusFilter from './StatusFilter.svelte'
-  import { filters, projects } from './lib/state.svelte'
+  import { filters } from './lib/state.svelte'
 
   // Row 1: search (if shown) and project. The status dropdown goes on row 2 with the
   // view's own controls (`actions`); without a search box it fits on row 1 instead.
@@ -14,12 +15,7 @@
     {#if search}
       <input type="search" bind:value={filters.q} placeholder="Search…" aria-label="Search" />
     {/if}
-    <select bind:value={filters.project} aria-label="Project">
-      <option value="">All projects</option>
-      {#each projects.list as p (p.id)}
-        <option value={p.key}>{p.key} · {p.name}</option>
-      {/each}
-    </select>
+    <ProjectFilter />
     {#if !search}<StatusFilter />{/if}
   </div>
   {#if search || actions}

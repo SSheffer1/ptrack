@@ -64,6 +64,7 @@ def test_list_filters(client, home):
         return [i["key"] for i in client.get("/items", params=params).json()]
 
     assert keys(project="CAR") == ["CAR-1"]
+    assert keys(project=["CAR", "HOME"]) == ["HOME-1", "HOME-2", "CAR-1"]  # several projects
     assert keys(status=["todo"]) == ["HOME-1", "CAR-1"]
     assert keys(status=["todo", "backlog"], project="HOME") == ["HOME-1", "HOME-2"]
     assert keys(label="plumbing") == ["HOME-1"]

@@ -3,8 +3,8 @@
 > Personal, cross-platform "issue tracker for my life": tickets for myself + calendar events, in one place.
 > Product name: **PTrack** (D-041). Code-level names stay lowercase `ptrack`.
 >
-> **Status:** 🟡 Server box is up and **running ptrack in testing** (Debian 13, wired, managed from the laptop over SSH; plain HTTP via Caddy). **No development on the box (D-039)** — M6 deploy files get built on the laptop. Earlier: paused 2026-10-24. Everything committed + pushed (`cd73197`). Milestones 1–5 + 7 (multi-user) + configuration done. Next: **Milestone 6 = v1.0 release** on the Debian box (fresh install) — planned Mon 2026-10-26, user may start it earlier (was cleaning out the box on 2026-10-24). **Read "Resume here" first.** Repo: https://github.com/SSheffer1/ptrack
-> **Last updated:** 2026-10-25
+> **Status:** 🟢 Back in development (2026-10-27): the user files work as tickets in the box's PTRACDEV project. PTRACDEV-1..7 built on the laptop, **not yet committed/deployed**. (On hold 2026-10-25 → 10-27.) The server box keeps **running PTrack in testing** for the family (Debian 13, wired, Docker Compose, plain HTTP via Caddy, nightly backups; it also serves the APK at `/ptrack.apk`). Box runs `44800cf`, now at a different address after a router restart (see `CLAUDE.local.md`). Milestones 1–5 + 7 + configuration done; M6 (v1.0 release) partly done. **Read "Resume here" first, then `todo.md`.** Repo: https://github.com/SSheffer1/ptrack
+> **Last updated:** 2026-10-27
 
 ---
 
@@ -29,7 +29,7 @@ Current plan:
 - **Already exists?** Partially (see *Prior Art*). Building is justified: user wants the result and to learn.
 - **Tech exists?** Yes. Hard parts are offline sync and scope control.
 - **Stack (built):** Svelte 5 + TypeScript UI, packaged as an **Android APK via Capacitor**; the phone keeps **its own copy as a change log** (works fully offline, D-032) and syncs with a **Python/FastAPI + SQLite server** (Alembic migrations). Desktop/iPhone use the same UI in a browser, served by the server. Phone reminders are local notifications. Family accounts with shared projects (D-035). Server settings in `server/ptrack.toml`, personal preferences synced (D-038). License GPL-3.0-or-later.
-- **Planned (M6):** Docker Compose on the home Debian box, **Caddy (HTTPS)**, nightly backups; v1.0 release.
+- **Deployed:** Docker Compose on the home Debian box, Caddy (plain HTTP; HTTPS shelved, D-043), nightly backups (D-044). Still to do for v1.0: signed APK + GitHub Release (see `todo.md`).
 
 ---
 
@@ -219,23 +219,24 @@ Build (new `deploy/` folder + server image):
 
 ---
 
-## Resume here (2026-10-24)
+## Resume here (2026-10-25, development on hold)
 
-**State:** all work committed + pushed; working tree clean. Last commits: `cd73197` configuration, `850d4b1` multi-user, `2a159f0` GPL license.
+**State:** on hold by the user's choice; nothing half-done. Working tree clean, `master` = `origin/master`. Last commits: `1f3315a` todo.md, `44800cf` box serves the APK, `9b6f6fd` specific-time reminders. Laptop dev servers are stopped. **Don't start new work until the user picks something**; the full feature list (next up / v1.0 / planned / shelved / decided against) is `todo.md`.
+
+**Rules that stay in force:** develop only on the laptop, the box only pulls + runs compose (D-039); the box is a live product in testing: back up before every change, minimal downtime; GitHub stays sanitized and usable from a fresh clone, so run the personal-details scan before every push (D-040); commit/push only on the user's OK.
 
 **What exists**
-- `server/` — FastAPI + SQLModel + SQLite, Alembic (5 migrations, head `78169c540812`), accounts/sign-in (`auth.py`), sharing + permissions + sync (`sync.py`), preferences (`prefs.py`), settings file (`config.py`, `ptrack.example.toml`), CLIs `ptrack-admin` (accounts, show-config) and `ptrack-serve`. **All commands: `server/COMMANDS.md`.** 89 tests.
-- `app/` — Svelte 5 + Vite web app + Capacitor 8 Android project. Online mode (browser) vs offline-first (phone): `lib/runtime.svelte.ts`. Local store/sync: `lib/local/`. 35 unit tests + a two-phone e2e (`sync.e2e.test.ts`, needs a scratch server; recipe in its header and COMMANDS.md).
-- `docs/CONFIGURATION.md` — every setting in three layers. This log.
+- `server/` — FastAPI + SQLModel + SQLite, Alembic (5 migrations, head `78169c540812`), accounts (`auth.py`), sharing + permissions + sync (`sync.py`), preferences (`prefs.py`), reminders (`reminders.py`: offsets + specific times), nightly backups, settings (`config.py`, `ptrack.example.toml`), CLIs `ptrack-admin` and `ptrack-serve`. **All commands: `server/COMMANDS.md`.** 100 tests.
+- `app/` — Svelte 5 + Vite web app + Capacitor 8 Android project. Online mode (browser) vs offline-first (phone): `lib/runtime.svelte.ts`; local store/sync: `lib/local/`. 40 unit tests + a two-phone e2e (`sync.e2e.test.ts`, needs a scratch server).
+- `deploy/` — Dockerfile, `compose.yaml` (ptrack + Caddy on :80), `Caddyfile`, `ptrack.toml`, `downloads/` (APK served at `/ptrack.apk`, git-ignored).
+- `docs/CONFIGURATION.md` — every setting. `todo.md` — feature list. This log.
 
-**Dev environment on the laptop (Arch Linux, on home Wi-Fi)**
-- Restart if needed: `cd server && uv run fastapi dev src/ptrack/main.py --host 0.0.0.0` (user runs this in their own terminal) and `cd app && npm run dev` (Vite :5173, localhost only). Server on :8000 also serves the built web app (`npm run build`) and `app/dist/ptrack.apk` (copied by hand after each APK build; dist is gitignored).
-- Dev DB `server/ptrack.db`: test data, with an admin account (the user) and a family test account.
-- Test devices: an Android phone over USB adb (sometimes needs a re-plug or a phone restart) and an iPhone using the web app. Addresses, device ids and account names: laptop-only `CLAUDE.local.md`. ufw on the laptop allows 8000/tcp from the home subnet.
-- **K11:** after a phone rejoins Wi-Fi it often can't reach the laptop until the laptop pings it. Goes away with the wired Debian server.
-- Build + install APK: `cd app && npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug) && adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
+**Deploying a change to the box** (from the laptop, over `ssh` to the box): check its `git status` is clean → `docker exec deploy-ptrack-1 ptrack-admin backup </dev/null` → `git pull --ff-only` → `docker compose -f deploy/compose.yaml build ptrack && … up -d` → wait for healthy, check data counts → if the app changed, copy the new APK into `deploy/downloads/ptrack.apk` (no restart). Gotchas: `</dev/null` on `docker exec` in piped scripts; quoted heredocs / `git commit -F` for commit messages.
 
-**Shelved (user decision, may revisit):** kanban board (D-033), quick-add (D-034). **Ideas not started:** app icon, ICS feed for phone calendars, offline desktop app (Tauri), release-signed APK, renaming the project (Q9).
+**Dev environment on the laptop**
+- `cd server && uv run fastapi dev src/ptrack/main.py --host 0.0.0.0` (user runs it) and `cd app && npm run dev`. Dev DB `server/ptrack.db` is test data.
+- Build + install APK, under `bash -euo pipefail` so a failed step stops it: `cd app && npm run check && npm run build && npx cap sync android && (cd android && ./gradlew -q assembleDebug) && adb install -r android/app/build/outputs/apk/debug/app-debug.apk && cp android/app/build/outputs/apk/debug/app-debug.apk dist/ptrack.apk`.
+- Addresses, device ids, account names, SSH alias: laptop-only `CLAUDE.local.md`.
 
 ---
 
@@ -306,6 +307,9 @@ Build (new `deploy/` folder + server image):
 | D-045 | 2026-10-25 | Descriptions and comments stay plain text (no Markdown). Comments can be edited (author only) and deleted (author, or the project's owner); "edited" shown when the body changed after posting (computed from the change log). | User: "plain text is fine for desc and comments… I do like the edit and delete options". | Active |
 | D-046 | 2026-10-25 | **Specific-time reminders**: besides offsets, a ticket's `reminders` can hold `@YYYY-MM-DDTHH:MM` (phone's local time). Shown as an "At a specific time" date-time picker + removable chips under the preset choices; they work on tickets without a due date (the section now always shows; presets only with a due date). Recurring copies shift them by the same number of days as the due date (`shift_reminders`). Not allowed in default-reminder preferences. Adding one to a ticket on defaults keeps the defaults explicitly. Stored sorted: offsets earliest first, then times. | User: "i like the default list but maybe another part of the section where we can add times to be reminded". Same field = no migration, same assignee permission rule. Older servers reject the new format (whole sync batch), so the box must be updated with the app. | Active |
 | D-047 | 2026-10-25 | **The box serves the APK** for devices without adb: Caddy serves `deploy/downloads/` (git-ignored APKs; a tracked README keeps the folder) at `/ptrack.apk`, everything else still goes to ptrack. The APK is built on the laptop and copied to the box with `scp` (a build artifact, not development on the box, D-039); re-copy after app changes. Missing file → 404, so a fresh clone still works. Interim until a signed APK on a GitHub Release (v1.0). | User: "have the box serve the apk for now". | Active |
+| D-048 | 2026-10-27 | **One default reminder for all tickets** (pref `reminders`, default `["0"]` = at the due time; 9:00 on the day without a time). Replaces `reminders_timed` / `reminders_untimed`; the server still accepts those names (an unknown pref rejects a whole sync batch, so a not-yet-updated phone would stop syncing) but the app ignores them. | User ticket PTRACDEV-1: defaults looked random (they differed by whether a ticket had a time). User chose "one default for all". | Active |
+| D-049 | 2026-10-27 | **Server admins may delete tickets** in any project they're a member of (not only owners); they still see only their own projects and can't rename/delete projects. Projects can have several owners; `ptrack-admin set-role <PROJECT> <user> owner|editor` changes a role (adds the member if needed, never demotes the last owner). | User ticket PTRACDEV-2: couldn't delete tickets as admin in a project the family account owned. | Active |
+| D-050 | 2026-10-27 | **Calendar obeys the Status filter fully**: finished tickets show (struck through, on their completion day) only when Done is ticked, like the List and Agenda. Supersedes "finished always shown". Also: Project filter is a multi-pick dropdown like Status (`ProjectFilter.svelte`; API `project` takes several keys), List sorts add project / priority / status / title (ties in due-date order; server + phone), labels sit at the right of list rows, Last sync is saved with the phone's data, and the phone's server address can be changed in Settings → Sync without signing out (checked against `/api/me` first). | User tickets PTRACDEV-3..7, and the box changing IP after a router restart. | Active |
 | D-017 | 2026-10-21 | No Tailscale/third-party tunnel unless forced by CGNAT. Use user's own domain + port forward + Caddy. | User objects to extra moving parts and dependencies. | Active |
 
 ---
@@ -360,6 +364,9 @@ Build (new `deploy/` folder + server image):
 - **2026-10-25** — Built specific-time reminders (D-046): server validation/sorting/shifting for repeats, app picker, scheduling for undated tickets, local backend checks. 100 server + 40 app tests; installed on the phone. Committed + pushed with a box update.
 - **2026-10-25** — Box serves the APK (D-047): Caddy route `/ptrack.apk` → `deploy/downloads/`, compose mount, README note. Config validated on the box before restarting Caddy.
 - **2026-10-25** — Added `todo.md` in the repo root: every feature considered and where it stands (next up, v1.0, planned later, shelved, decided against, unpicked ideas, known issues, done). User added a terminal interface and an MCP server (AI access) to the planned features; plain bullets, no checkboxes.
+- **2026-10-25** — Pushed `1f3315a` (todo.md; box not updated, docs only). User put **development on hold**. Updated Status, Summary, "Resume here" and Next Steps for picking it back up; box keeps running in testing.
+- **2026-10-27** — Router restart: the box came back as .68 (no DHCP reservation; the user can't change router settings right now). Auto-start worked (containers healthy, nightly backup ran). The phone could only change its server address by signing out, which wipes unsynced changes → added Settings → Sync → Change (verifies the address knows this device as the same person before saving); installed with `adb install -r` (data kept) and synced. Also fixed two reminder tests that failed on the dates they mention (clock now frozen in tests).
+- **2026-10-27** — User filed 7 tickets in the PTRACDEV project; worked them (D-048, D-049, D-050). PTRACDEV-1 was not a bug in the data (tickets with a time used a different default; two had "1 hour before" picked); fixed by one default. PTRACDEV-2: HOME is owned by the family account. 103 server + 42 app tests. Not yet deployed.
 
 ---
 
@@ -375,5 +382,5 @@ Build (new `deploy/` folder + server image):
 8. ~~Milestone 5: reminders.~~ Done 2026-10-24 (phone-only local notifications).
 9. ~~Milestone 7: multi-user (accounts, shared projects, assignees).~~ Done 2026-10-24.
 10. ~~Configuration: server ptrack.toml + per-user preferences + COMMANDS.md.~~ Done 2026-10-24.
-11. **Milestone 6 = v1.0 release** on the Debian box: Docker deploy done; nightly backups built (D-044); HTTPS shelved (D-043, plan recorded).
-12. Later / optional: ICS feed, kanban (shelved), quick-add (shelved), native iOS app (shelved, D-042) or PWA, offline desktop app.
+11. **Milestone 6 = v1.0 release** on the Debian box: Docker deploy done; nightly backups built (D-044); box serves the APK (D-047); HTTPS shelved (D-043, plan recorded). Left: signed APK, GitHub Release.
+12. **On hold since 2026-10-25.** When resuming, the user picks from `todo.md` (it supersedes the old ideas list here).

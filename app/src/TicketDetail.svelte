@@ -41,6 +41,7 @@
 
   const project = $derived(projects.list.find((p) => p.id === item?.project_id))
   const isOwner = $derived(project?.role === 'owner')
+  const canDelete = $derived(isOwner || !!runtime.me?.is_admin) // admins may delete tickets in any project they're in
   const me = $derived(runtime.me?.id ?? '')
   const remindsMe = $derived(item ? notifiedUser(item, me) === me : false)
 
@@ -390,7 +391,7 @@
       {/each}
     </ul>
 
-    {#if isOwner}
+    {#if canDelete}
       <div class="danger-zone">
         <button class="danger" onclick={remove}>Delete ticket</button>
       </div>

@@ -13,7 +13,6 @@
   <span class="key">{item.key ?? '…'}</span>
   <span class="title">{item.title}</span>
   <span class="meta">
-    {#each item.labels as label (label)}<span class="label">{label}</span>{/each}
     {#if item.priority !== 'none'}
       <span class="priority priority-{item.priority}">{PRIORITY_LABELS[item.priority]}</span>
     {/if}
@@ -32,4 +31,10 @@
     {/if}
     <span class="badge status-{item.status}">{STATUS_LABELS[item.status]}</span>
   </span>
+  {#if item.labels.length}
+    <!-- Labels keep to the right edge, out of the way, even when the row wraps. -->
+    <span class="labels">
+      {#each item.labels as label (label)}<span class="label">{label}</span>{/each}
+    </span>
+  {/if}
 </a>

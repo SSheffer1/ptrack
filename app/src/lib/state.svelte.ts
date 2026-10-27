@@ -7,7 +7,7 @@ import { api, errorText, type ItemFilters, type Project, type SortOrder, type St
 import { runtime } from './runtime.svelte'
 
 export const filters = $state({
-  project: '', // project key; '' = all
+  projects: [] as string[], // project keys; none ticked = all
   statuses: ['backlog', 'todo', 'in_progress', 'blocked'] as Status[], // done hidden by default
   q: '',
   mine: false, // only tickets assigned to me (or unassigned ones I created)
@@ -16,7 +16,9 @@ export const filters = $state({
 
 /** The filters every view applies (each view adds its own dates, statuses or sort). */
 export function commonFilters(): ItemFilters {
-  return { project: filters.project, q: filters.q, assignee: filters.mine ? 'me' : undefined }
+  // Skip ticked projects that have since been deleted (asking for one is an error).
+  const project = filters.projects.filter((key) => projects.list.some((p) => p.key === key))
+  return { project, q: filters.q, assignee: filters.mine ? 'me' : undefined }
 }
 
 export const projects = $state({

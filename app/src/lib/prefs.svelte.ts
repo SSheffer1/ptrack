@@ -6,8 +6,7 @@
 import type { SortOrder, Status } from './types'
 
 export interface Prefs {
-  reminders_timed: string[] // default reminders for tickets with a due time
-  reminders_untimed: string[] // …and without one
+  reminders: string[] // default reminders for any ticket with a due date
   untimed_hour: number // 0–23: when an untimed ticket counts as due (reminders count from it)
   week_start: 'sunday' | 'monday'
   soon_days: number // due dates turn orange this many days ahead
@@ -17,8 +16,7 @@ export interface Prefs {
 }
 
 export const PREF_DEFAULTS: Prefs = {
-  reminders_timed: ['-8h'],
-  reminders_untimed: ['0'],
+  reminders: ['0'], // at the due time; 9:00 on the day for tickets without a time
   untimed_hour: 9,
   week_start: 'sunday',
   soon_days: 2,

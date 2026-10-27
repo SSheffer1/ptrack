@@ -79,6 +79,23 @@ def test_sort_by_due(client, home):
     assert titles == ["Sooner, morning", "Sooner, untimed", "Later", "No date"]
 
 
+def test_sort_by_project_priority_status_title(client, home):
+    client.post("/projects", json={"key": "CAR", "name": "Car"})
+    new(client, "wash", project="CAR", priority="low", status="blocked")
+    new(client, "Bills", priority="urgent", due="2026-11-02", status="in_progress")
+    new(client, "apples", priority="urgent", due="2026-11-01", status="backlog")
+    new(client, "Cat food")
+
+    def titles(sort):
+        return [i["title"] for i in client.get("/items", params={"sort": sort}).json()]
+
+    # Ties keep due-date order (undated last).
+    assert titles("project") == ["wash", "apples", "Bills", "Cat food"]
+    assert titles("priority") == ["apples", "Bills", "wash", "Cat food"]
+    assert titles("status") == ["apples", "Cat food", "Bills", "wash"]
+    assert titles("title") == ["apples", "Bills", "Cat food", "wash"]  # ignoring case
+
+
 def test_completed_range_filter(client, home):
     for title, completed in [("Sept", "2026-09-30"), ("Oct", "2026-10-15"), ("Open", None)]:
         new(client, title)

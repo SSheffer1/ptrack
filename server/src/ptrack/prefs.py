@@ -12,20 +12,23 @@ from typing import Any, Literal
 
 from pydantic import Field, TypeAdapter
 
-from .models import Status
+from .models import SortOrder, Status
 from .reminders import normalize_reminders
 
 Hour = Field(ge=0, le=23)
 
 # Name → type. Keep in step with app/src/lib/prefs.svelte.ts.
 PREFS: dict[str, Any] = {
-    "reminders_timed": list[str],  # default reminders for tickets with a due time, e.g. ["-8h"]
-    "reminders_untimed": list[str],  # …and without one, e.g. ["0"]
+    "reminders": list[str],  # default reminders for tickets with a due date, e.g. ["0"]
+    # Replaced by "reminders" (one default for all tickets). Still accepted so an
+    # app that hasn't been updated yet can sync; the app no longer reads them.
+    "reminders_timed": list[str],
+    "reminders_untimed": list[str],
     "untimed_hour": int,  # the hour (0–23) an untimed ticket counts as due; reminders count from it
     "week_start": Literal["sunday", "monday"],
     "soon_days": int,  # due dates turn orange this many days ahead (0–14)
     "default_statuses": list[Status],  # statuses shown when the app opens
-    "default_sort": Literal["created", "due", "completed"],
+    "default_sort": SortOrder,
     "sync_minutes": int,  # background sync interval on offline-first devices; 0 = never (0–1440)
 }
 
@@ -47,6 +50,6 @@ def validate(name: str, value: Any) -> Any:
         low, high = RANGES[name]
         if not low <= value <= high:
             raise ValueError(f"{name} must be between {low} and {high}")
-    if name.startswith("reminders_"):
+    if name.startswith("reminders"):
         value = normalize_reminders(value, allow_specific_times=False)
     return value

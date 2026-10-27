@@ -26,18 +26,18 @@
 
 <svelte:window onclick={closeIfOutside} onkeydown={(e) => e.key === 'Escape' && panel && (panel.open = false)} />
 
-<details class="status-filter" bind:this={panel}>
+<details class="pick-filter" bind:this={panel}>
   <summary>{label} <span aria-hidden="true">▾</span></summary>
-  <div class="status-panel" role="group" aria-label="Show statuses">
+  <div class="pick-panel" role="group" aria-label="Show statuses">
     {#each STATUSES as s (s)}
-      <label class="status-option">
+      <label class="pick-option">
         <input type="checkbox" checked={filters.statuses.includes(s)} onchange={() => toggle(s)} />
         <span class="dot status-{s}"></span>
         {STATUS_LABELS[s]}
       </label>
     {/each}
     <hr />
-    <label class="status-option">
+    <label class="pick-option">
       <input type="checkbox" bind:checked={filters.mine} />
       Assigned to me
     </label>

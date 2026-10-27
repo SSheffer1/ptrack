@@ -16,6 +16,7 @@ environment, so there's nothing to activate first.
 | `uv run ptrack-admin enable-user <name>` | Undo `disable-user`. |
 | `uv run ptrack-admin set-admin <name>` | Make an account an admin (`--off` to remove it). |
 | `uv run ptrack-admin sign-out <name>` | Sign an account out on all its devices (e.g. lost phone). |
+| `uv run ptrack-admin set-role <PROJECT> <name> owner` | Make someone an owner (or `editor`) of a project, adding them if needed. A project can have several owners; the last one can't be demoted. |
 
 Usernames are lowercase letters, digits and `. _ -`, 2–32 characters, starting
 with a letter. Admins can also do most of this in the app: Settings → Family accounts.

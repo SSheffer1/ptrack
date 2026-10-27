@@ -390,6 +390,14 @@ label > textarea {
   flex: 1 1 200px;
 }
 
+.ticket .labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+
 .meta {
   display: flex;
   flex-wrap: wrap;
@@ -824,6 +832,17 @@ button.link {
   font-size: 0.8rem;
 }
 
+.facts dd button {
+  margin-left: 0.5rem;
+  font-family: inherit;
+}
+
+.server-change {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
 .sign-in {
   max-width: 24rem;
   margin: 3rem auto;
@@ -940,11 +959,11 @@ button.link.danger-link {
   margin-left: auto;
 }
 
-.status-filter {
+.pick-filter {
   position: relative;
 }
 
-.status-filter summary {
+.pick-filter summary {
   list-style: none; /* hide the default triangle */
   cursor: pointer;
   padding: 0.4rem 0.6rem;
@@ -955,11 +974,11 @@ button.link.danger-link {
   user-select: none;
 }
 
-.status-filter summary::-webkit-details-marker {
+.pick-filter summary::-webkit-details-marker {
   display: none;
 }
 
-.status-panel {
+.pick-panel {
   position: absolute;
   z-index: 10;
   top: calc(100% + 4px);
@@ -974,14 +993,14 @@ button.link.danger-link {
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
 }
 
-.status-panel hr {
+.pick-panel hr {
   width: 100%;
   border: none;
   border-top: 1px solid var(--border);
   margin: 0.3rem 0;
 }
 
-label.status-option {
+label.pick-option {
   flex-direction: row;
   align-items: center;
   gap: 0.6rem;
@@ -992,16 +1011,16 @@ label.status-option {
   cursor: pointer;
 }
 
-label.status-option:hover {
+label.pick-option:hover {
   background: var(--bg);
 }
 
-.status-option input {
+.pick-option input {
   width: auto;
   margin: 0;
 }
 
-.status-option .dot {
+.pick-option .dot {
   width: 0.6rem;
   height: 0.6rem;
   border-radius: 50%;

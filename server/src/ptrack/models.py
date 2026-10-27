@@ -15,6 +15,7 @@ Timestamps are integers: milliseconds since the Unix epoch.
 
 from datetime import date, time
 from enum import StrEnum
+from typing import Literal
 
 from sqlmodel import JSON, Column, Field, Index, SQLModel, UniqueConstraint
 
@@ -39,6 +40,10 @@ class Priority(StrEnum):
     medium = "medium"
     high = "high"
     urgent = "urgent"
+
+
+# Orders for the ticket list (api.py) and the default_sort preference (prefs.py).
+SortOrder = Literal["created", "due", "completed", "project", "priority", "status", "title"]
 
 
 class Role(StrEnum):
